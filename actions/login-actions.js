@@ -1,5 +1,6 @@
 import { AsyncStorage } from 'react-native';
 import API from "../api/login";
+import APIEntity from "../api/entity-save";
 
 export const getToken = (token) => ({
     type: 'GET_TOKEN',
@@ -90,4 +91,52 @@ export const loginUser = (email, password) => {
             })
             .catch(error => console.log(error))
     }
-}       
+}
+
+
+export async function loginUserMain  (email, password)  {
+   
+        var responseJson = await API.loginUser(email, password);
+        if (responseJson.status == 200) {
+            await AsyncStorage.setItem('userToken', responseJson.headers.map["authorization"])
+            return fetchUserInformation();
+        } else {
+
+        }
+    
+}
+
+export async function fetchUserInformation() {
+
+    try {
+
+        const userToken = await AsyncStorage.getItem('userToken');
+        
+        const responseJson = await APIEntity.FetchUserEntity(userToken);
+
+        
+        if (responseJson.status == 200) {
+            
+            var json = await responseJson.json();
+            await AsyncStorage.setItem('UserEntities', JSON.stringify(json));
+            ;
+        } else {
+            await AsyncStorage.clear();
+            return false;
+        }
+        const responseJson1 = await API.FetchLoginUser(userToken);
+        if (responseJson1.status == 200) {
+            
+            var json = await responseJson1.json();
+            await AsyncStorage.setItem('User', JSON.stringify(json));
+        } else {
+            await AsyncStorage.clear();
+            return false;
+        }
+        return true;
+    } catch (e) {
+        
+        return e.message;
+    }
+
+}    

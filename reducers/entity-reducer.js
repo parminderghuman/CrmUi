@@ -24,6 +24,7 @@ const entityReducer = (state = {
        
         case 'SystemEntityMap':
                     return { ...state, systemEntityMap: action.data.map,  systemEntity: action.data.entity };
+        
         default:
             return state;
     }

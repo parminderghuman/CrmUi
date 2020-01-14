@@ -4,9 +4,9 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, AsyncStorage } fro
 import { bindActionCreators } from "redux";
 
 import { connect } from 'react-redux';
-import * as  loginUser  from '../actions/login-actions';
 import { ExpoLinksView } from '@expo/samples';
 import {ToastAndroid} from 'react-native';
+import * as LoginService from "../actions/login-actions";
 
 class LoginScreen extends React.Component {
   constructor() {
@@ -23,11 +23,16 @@ class LoginScreen extends React.Component {
     this.setState({ [type]: value });
   }
 
-  handleSubmit() {
-    this.props.loginUser(this.state.name,this.state.password)
-  
-    
-  }
+  async handleSubmit() {
+    var resp = await LoginService.loginUserMain(this.state.name,this.state.password)
+   // loginUser.
+    if(resp === true){
+      this.props.navigation.navigate( 'Home');
+    }else if(resp == false){
+
+    }
+    //this.props.navigation.navigate( 'Home');
+  };
 
   componentWillReceiveProps(nextProps) {
     
@@ -124,7 +129,7 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = dispatch => {
   return bindActionCreators({
-      ...loginUser,
+     
   }, dispatch);
 }
 

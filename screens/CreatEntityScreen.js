@@ -14,6 +14,9 @@ import { connect } from 'react-redux';
 import * as  entityActions from '../actions/entity-action';
 import { number } from 'prop-types';
 import { apisAreAvailable } from 'expo';
+import CustomMultiPicker from "react-native-multiple-select-list";
+import MultiSelect from 'react-native-multiple-select';
+import CustomPicker from "../components/CustomPicker";
 
 class CreatEntityScreen extends React.Component {
 
@@ -39,7 +42,8 @@ class CreatEntityScreen extends React.Component {
       }),
       data: {
         // Integer:""
-      }
+      },
+      parent: undefined
     };
     this.handleAdd = this.handleAdd.bind(this);
     this.addColumn = this.addColumn.bind(this)
@@ -52,6 +56,7 @@ class CreatEntityScreen extends React.Component {
   componentWillReceiveProps(nextProps) {
 
     if (nextProps.entity) {
+      
       this.setState({ data: nextProps.entity })
     }
     if (nextProps.systemEntityMap) {
@@ -134,26 +139,32 @@ class CreatEntityScreen extends React.Component {
   });
   saveEntity() {
     debugger
-    this.props.saveEntity(this.state.system_table.name, this.state.data)
+    if (this.state.parent){
+      this.state.data.parent_id = this.state.parent._id;
+    }
+      this.props.saveEntity(this.state.system_table.name, this.state.data)
     //this.props.navigation.goBack();
   }
   componentDidMount() {
     const { navigation } = this.props
     var system_table = navigation.getParam("system_tables");
     var entity = navigation.getParam("entity");
+    var parent = navigation.getParam("parent");
 
     this.setState({
-      system_table: system_table, entity: entity
+      system_table: system_table, entity: entity,
+      parent: parent
     })
     navigation.setParams({
       saveEntity: this.saveEntity,
-      refreshData: this.refreshData
+      refreshData: this.refreshData,
+     
     })
     this.refreshData();
     //this.props.fetchEntities("system_tables");
   }
   refreshData() {
-    debugger
+    
     const { navigation } = this.props
     var system_table = navigation.getParam("system_tables");
     var entity = navigation.getParam("entity");
@@ -167,7 +178,7 @@ class CreatEntityScreen extends React.Component {
     }
 
     system_table.columns.map((col, ind) => {
-      if(col.type == "ObjectId"){
+      if (col.type == "ObjectId" || col.type == "MultiObject") {
         this.getDependendData(col)
 
       }
@@ -175,19 +186,19 @@ class CreatEntityScreen extends React.Component {
 
   }
   async getDependendData(col) {
-    debugger
-    if (col.type == "ObjectId") {
+    
+    if (col.type == "ObjectId" || col.type == "MultiObject") {
       const token = await AsyncStorage.getItem('userToken')
       var a = await API.FetchEntity(token, "system_tables", col.targetClass);
       a = await a.json()
       b = await API.FetchEntities(token, a.name);
       b = await b.json()
-      for( var i in a.columns){
-        if(a.columns[i].dropDownValue ==  true){
-          this.state.dependencyTable[col.targetClass] =a.columns[i]
+      for (var i in a.columns) {
+        if (a.columns[i].dropDownValue == true) {
+          this.state.dependencyTable[col.targetClass] = a.columns[i]
         }
       }
-     
+
       this.state.dependencyData[col.targetClass] = b
       this.setState({
         dependencyTable: this.state.dependencyTable,
@@ -240,6 +251,7 @@ class CreatEntityScreen extends React.Component {
                 if (data[value.name] && value.type != "Boolean") {
                   data[value.name] = data[value.name] + "";
                 }
+
                 if (value.type == "Boolean") {
                   return <Layout>
                     <Text>{value.displayName}</Text>
@@ -330,7 +342,10 @@ class CreatEntityScreen extends React.Component {
                       disabled={false}
                       placeholder={value.displayName}
                       value={data[value.name]}
-                      onChangeText={(e) => { data[value.name] = e; this.setState({ data: data }) }}
+                      onChangeText={(e) => {
+                        
+                        data[value.name] = e; this.setState({ data: data })
+                      }}
                     />
                   </Layout>
                 }
@@ -363,6 +378,69 @@ class CreatEntityScreen extends React.Component {
                         )}
                     </Picker>
                   </Layout>
+                } else if (value.type == "MultiSelect") {
+                  return <Layout>
+                    <Text>{value.displayName}</Text>
+                    <CustomMultiPicker
+                      options={value.options}
+                      //selectedValue={data[value.name]}
+                      search={true} // should show search bar?
+                      multiple={true} //
+                      style={styles.input}
+                      selected={data[value.name].split(",")}
+                      selectedIconName={"ios-checkmark-circle"}
+                      unselectedIconName={"ios-checkmark-circle-outline"}
+                      returnValue={"label"}
+                      callback={(itemValue) => {
+                        try {
+                          for (var i in itemValue) {
+                            
+                            if (typeof (itemValue[i]) == "undefined") {
+
+                              itemValue.splice(i, 1)
+                            }
+                          }
+                          data[value.name] = itemValue; this.setState({ data: data })
+                        }
+                        catch (e) { }
+                      }
+                      }>
+                    </CustomMultiPicker>
+                  </Layout>
+                }
+                else if (value.type == "MultiObject") {
+                  return <Layout>
+                    <Text>{value.displayName}</Text>
+                    {this.state.dependencyData[value.targetClass] && <CustomPicker
+                      options={this.state.dependencyData[value.targetClass]}
+
+                      selectedValue={data[value.name]}
+                      display={this.state.dependencyTable[value.targetClass] ? this.state.dependencyTable[value.targetClass].name : ""}
+                      search={true} // should show search bar?
+                      multiple={true} //
+                      style={styles.input}
+                      selected={data[value.name] ? data[value.name].split(",") : ""}
+                      selectedIconName={"ios-checkmark-circle"}
+                      unselectedIconName={"ios-checkmark-circle-outline"}
+                      returnValue={"_id"}
+                      callback={(itemValue) => {
+                        
+                        try {
+                          for (var i in itemValue) {
+                            
+                            if (typeof (itemValue[i]) == "undefined") {
+
+                              itemValue.splice(i, 1)
+                            }
+                          }
+                          data[value.name] = itemValue; this.setState({ data: data })
+                        }
+                        catch (e) { }
+                      }
+                      }>
+                    </CustomPicker>
+                    }
+                  </Layout>
                 }
                 else if (value.type == "ObjectId") {
                   return <Layout>
@@ -371,12 +449,13 @@ class CreatEntityScreen extends React.Component {
                       selectedValue={data[value.name]}
                       style={styles.input}
                       onValueChange={(itemValue, itemIndex) => {
+                        debugger
                         data[value.name] = itemValue; this.setState({ data: data })
                       }
                       }>
                       {
-                        
-                      this.state.dependencyTable[value.targetClass] &&   this.state.dependencyData[value.targetClass] && this.state.dependencyData[value.targetClass].map((role, i) =>
+
+                        this.state.dependencyData[value.targetClass] && this.state.dependencyData[value.targetClass].map((role, i) =>
                           <Picker.Item label={role[this.state.dependencyTable[value.targetClass].name]} value={role._id} />
                         )}
                     </Picker>

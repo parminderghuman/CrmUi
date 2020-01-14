@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, AsyncStorage } from 'react-native';
 import { ExpoLinksView } from '@expo/samples';
 import {
     Input, Layout, Select, CheckBox, List,
@@ -9,7 +9,7 @@ import { Icon } from 'react-native-elements'
 import { bindActionCreators } from "redux";
 import { connect } from 'react-redux';
 import * as  entityActions from '../actions/entity-action';
-
+import API from "../api/entity-save";
 class EntityList extends React.Component {
 
     constructor() {
@@ -31,36 +31,45 @@ class EntityList extends React.Component {
             }),
             entities: []
         };
-        this.handleAdd = this.handleAdd.bind(this);
+        this.handleAddE = this.handleAddE.bind(this);
         this.openTable = this.openTable.bind(this);
         this.refreshData = this.refreshData.bind(this);
+        this.openList = this.openList.bind(this);
     }
 
     openTable(v) {
 
         this.props.navigation.navigate('CreateEntity', {
             "system_tables": this.state.system_tables,
-            "entity": v
+            "entity": v,
+            "parent": this.state.parent
         })
-       
-
     }
+    handleAddE() {
+        debugger
+        this.props.navigation.navigate('CreateEntity', {
+            "system_tables": this.state.system_tables,
+            "entity": undefined,
+            "parent": this.state.parent
+        })
+    }
+    openList(v, t) {
+        this.props.navigation.navigate('Home', {
+            "system_tables": v,
+            "parent": t
 
+        })
+    }
     componentWillReceiveProps(nextProps) {
-debugger
-        if (nextProps.entities) {
-            this.setState({ entities: nextProps.entities })
-        }
-        if (nextProps.loading) {
-            this.setState({ loading: nextProps.loading })
-        }
+        debugger
+        this.refreshData();
 
     }
 
 
 
     static navigationOptions = ({ navigation }) => ({
-        title: 'Tables',
+        title: navigation.getParam('Title', 'Table') + "",
         headerRight: () => (
             <Layout style={{
                 flex: 1,
@@ -71,9 +80,9 @@ debugger
                 <Icon
                     onPress={() => {
                         try {
-                            navigation.getParam('handleAdd')()
+                            navigation.getParam('handleAddE')()
                         } catch (e) {
-
+                            debugger
                         }
                     }}
                     style={{
@@ -98,33 +107,74 @@ debugger
                     name="refresh"
                 />
             </Layout>
+        ), headerLeft: () => (
+            <Layout style={{
+                flex: 1,
+                flexDirection: 'row',
+                paddingTop: 15,
+                backgroundColor: '#fff'
+            }}>
+                <Icon
+                    onPress={() => navigation.openDrawer()}
+                    style={{
+                        flex: 1,
+                        margin: 8,
+                    }}
+                    name="menu"
+                />
+
+
+            </Layout>
         ),
     });
 
-    handleAdd() {
-        this.props.navigation.navigate('CreateEntity', {
-            "system_tables": this.state.system_tables,
-            "entity": undefined
-        })
-    }
+
 
     componentDidMount() {
 
         const { navigation } = this.props
-
-        this.setState({ system_tables: navigation.getParam("system_tables") });
         navigation.setParams({
-            handleAdd: this.handleAdd,
-            refreshData: this.refreshData
+            'handleAddE': this.handleAddE,
+            'refreshData': this.refreshData
         })
-        this.refreshData();
+        if (navigation.getParam("system_tables")) {
+
+            this.setState({
+                system_tables: navigation.getParam("system_tables"),
+                parent: navigation.getParam("parent")
+            });
+           
+
+        }
+        const v = navigation.getParam("system_tables")
+        
+
         //this.props.fetchEntities("system_tables");
     }
-    refreshData() {
-         const { navigation } = this.props
+    async refreshData() {
+
+        const userToken = await AsyncStorage.getItem('userToken');
+
+        const { navigation } = this.props
         const v = navigation.getParam("system_tables")
-        this.props.fetchSystemEntity("system_tables", v._id);
-        this.props.fetchEntities(v.name);
+        const parent = navigation.getParam("parent");
+        var tableS = await API.FetchEntity(userToken, "system_tables", v._id);
+        tableS = await tableS.json();
+        var query = {};
+        if (parent) {
+            query['parent_id'] = parent._id;
+        }
+        debugger
+        var tableF = await API.FetchEntities(userToken, v.name, query);
+        debugger
+        tableF = await tableF.json();
+        this.setState({
+            entities: tableF, system_tables: tableS,
+            parent: navigation.getParam("parent")
+        })
+        //const v = navigation.getParam("system_tables")
+       
+
     }
 
     render() {
@@ -155,11 +205,11 @@ debugger
             { text: 'ObjectId' },
             { text: 'File' },
         ];
-        const { entities } = this.state
+        const { entities, system_tables } = this.state
 
         return (
             <ScrollView style={styles.container}>
-                {
+                {entities &&
 
                     entities.map((v, i) =>
                         <Layout>
@@ -168,27 +218,19 @@ debugger
                             })}
                             <Button onPress={(e) => this.openTable(v)}>
                                 edit
-            </Button>
+                 </Button>
+                            {system_tables && system_tables.childTables && system_tables.childTables.map((k, i) =>
+                                <Button onPress={(e) => this.openList(k, v)}>
+                                    {k.name}
+                                </Button>
 
+                            )}
                         </Layout>
                     )}
             </ScrollView>
         );
     }
 }
-const mapStateToProps = state => ({
-    entities: state.entityReducer.entities,
-    systemEntity: state.entityReducer.systemEntity
-
-    //loading: state.entityReducer.loading, const { navigation } = this.props
-});
 
 
-const mapDispatchToProps = dispatch => {
-    return bindActionCreators({
-        ...entityActions,
-    }, dispatch);
-}
-
-
-export default connect(mapStateToProps, mapDispatchToProps)(EntityList);
+export default EntityList;

@@ -10,9 +10,10 @@ import HomeScreen from '../screens/HomeScreen';
 import LinksScreen from '../screens/LinksScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import CreateTableScreen from '../screens/CreateTableScreen';
-import { DrawerNavigator ,StackNavigator} from 'react-navigation';
+import { DrawerNavigator ,StackNavigator,createSwitchNavigator} from 'react-navigation';
 import SideMenu from "../screens/SideMenu";
 import { createDrawerNavigator } from 'react-navigation-drawer';
+import EntityList from '../screens/EntityList';
 
 const config = Platform.select({
   web: { headerMode: 'screen' },
@@ -21,13 +22,13 @@ const config = Platform.select({
 
 const HomeStack = createStackNavigator(
   {
-    Home: HomeScreen,
+    Home: EntityList,
   },
   config
 );
 
 HomeStack.navigationOptions = {
-  tabBarLabel: 'Home',
+  tabBarLabel: 'EntityList',
   tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}
@@ -40,7 +41,7 @@ HomeStack.navigationOptions = {
   ),
 };
 
-HomeStack.path = 'Home';
+HomeStack.path = 'EntityList';
 
 const LinksStack = createStackNavigator(
   {
@@ -75,7 +76,7 @@ SettingsStack.navigationOptions = {
 SettingsStack.path = 'Settings';
 const TableScreenStack = createStackNavigator(
   {
-    TableScreen: TableScreen,
+    TableListAdmin: TableScreen,
    // CreateTable : createStackNavigator({ CreateTable: {screen:CreateTableScreen, navigationOptions:{header:null}} })
   },
   config,
@@ -90,7 +91,7 @@ TableScreenStack.navigationOptions = {
 };
 
 TableScreenStack.path = 'TableListAdmin';
-const sn =  createStackNavigator({
+const sn =  createSwitchNavigator({
   HomeStack:{screen:HomeStack,navigationOptions:{header:null}},
   LinksStack:{screen:LinksStack,navigationOptions:{header:null}},
   SettingsStack:{screen:SettingsStack,navigationOptions:{header:null}},
@@ -105,6 +106,16 @@ const tabNavigator = createDrawerNavigator({sn: {screen:sn ,navigationOptions:{h
  
 });
 
+// const tabNavigator = createDrawerNavigator({
+//   HomeStack: { screen: HomeStack, navigationOptions: { header: null } },
+//   LinksStack: { screen: LinksStack, navigationOptions: { header: null } },
+//   SettingsStack: { screen: SettingsStack, navigationOptions: { header: null } },
+//   TableScreenStack: { screen: TableScreenStack, navigationOptions: { header: null } },
+// }, {
+//   contentComponent: SideMenu,
+//   drawerWidth: Dimensions.get('window').width - 120,
+
+// });
 tabNavigator.path = '';
 
 export default tabNavigator;

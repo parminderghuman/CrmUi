@@ -1,6 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Button, Picker, Text } from 'react-native';
-import { ExpoLinksView } from '@expo/samples';
+import { ScrollView, StyleSheet, Picker, Text, ActivityIndicator, Modal, View, ToastAndroid } from 'react-native';
 import {
   Input, Layout, Select, CheckBox, List,
   ListItem
@@ -9,6 +8,8 @@ import { Icon } from 'react-native-elements'
 import { bindActionCreators } from "redux";
 import { connect } from 'react-redux';
 import * as  entityActions from '../actions/entity-action';
+import API from "../api/entity-save";
+import { AsyncStorage } from 'react-native';
 
 class CreateTableScreen extends React.Component {
 
@@ -38,7 +39,7 @@ class CreateTableScreen extends React.Component {
         icon: '',
         columns: [{ name: "", type: 'Boolean', uniqueValue: false, nullValue: true, defaultValue: null, targetClass: null }],
         permissions: []
-      }
+      }, loading: false
     };
     this.handleAdd = this.handleAdd.bind(this);
     this.addColumn = this.addColumn.bind(this)
@@ -49,9 +50,10 @@ class CreateTableScreen extends React.Component {
   }
 
   componentWillReceiveProps(nextProps) {
-
+    
     if (!this.state.isNew && nextProps.systemEntity) {
-      this.setState({ table: nextProps.systemEntity })
+      this.setState({ table: nextProps.systemEntity, loading: false })
+
     }
     if (nextProps.loading) {
       this.setState({ loading: nextProps.loading })
@@ -67,7 +69,7 @@ class CreateTableScreen extends React.Component {
     if (!this.state.table.permissions) {
       this.state.table.permissions = []
     }
-    this.state.table.permissions.push({ name: '' })
+    this.state.table.permissions.push({ name: '', canAdd: true })
     this.setState({ table: this.state.table })
   }
 
@@ -157,15 +159,29 @@ class CreateTableScreen extends React.Component {
           icon: '',
           columns: [{ name: "", type: 'Boolean', uniqueValue: false, nullValue: true, defaultValue: null, targetClass: null }],
           permissions: []
-        }
+        }, loading: false
       })
     }
     this.props.fetchRoles("Role")
   }
 
-  saveEntity() {
-
+  async saveEntity() {
+    this.setState({ loading: true })
     this.props.saveSystemEntity("system_tables", this.state.table)
+    const token = await AsyncStorage.getItem('userToken')
+    var responseJson = await API.EntitySave(token, "system_tables", this.state.table)
+    if (responseJson.status == 200) {
+      var json = await responseJson.json();
+      this.setState({ table: json, loading: false })
+
+      ToastAndroid.showWithGravity(
+        'Changes Saved!',
+        ToastAndroid.SHORT,
+        ToastAndroid.BOTTOM,
+      );
+    } else {
+
+    }
     //this.props.navigation.goBack();
   }
   componentDidMount() {
@@ -178,6 +194,7 @@ class CreateTableScreen extends React.Component {
     if (!id) {
       this.setState({ isNew: true, id: id })
     }
+    this.setState({ loading: true })
     this.fetchEntity();
 
   }
@@ -186,7 +203,7 @@ class CreateTableScreen extends React.Component {
   }
   render() {
 
-    const { table } = this.state;
+    const { table, loading } = this.state;
     const styles = StyleSheet.create({
       container: {
         flex: 1,
@@ -202,19 +219,32 @@ class CreateTableScreen extends React.Component {
       },
     });
 
-    const Types = [
-      { text: 'Boolean' },
-      { text: 'Integer' },
-      { text: 'Double' },
-      { text: 'Date ' },
-      { text: 'Long' },
-      { text: 'String' },
-      { text: 'ObjectId' },
-      { text: 'File' },
-    ];
+    const lStyles = StyleSheet.create({
+      container: {
+        flex: 1,
+        justifyContent: 'center',
+        height: 100
+      },
+      horizontal: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        padding: 10
+      }
+    })
     return (
-      <ScrollView style={styles.container}>
 
+      <ScrollView style={styles.container}>
+        {loading &&
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={true}
+          >
+            <View style={[lStyles.container, lStyles.horizontal]}>
+              <ActivityIndicator size="large" color="#000000" />
+            </View>
+          </Modal>
+        }
         <Input
           value={table.name}
           label='Name'
@@ -224,6 +254,36 @@ class CreateTableScreen extends React.Component {
             table.name = ev; this.setState({ table: table })
           }}
         />
+        <CheckBox style={styles.input}
+          text={'IsAlias'}
+          checked={table.alias}
+          onChange={(e) => { table.alias = e; this.setState({ table: table }) }}
+        />
+        {table.alias && <Input
+          value={table.aliasRules}
+          label='Alias Rules'
+          placeholder='Enter Table Name'
+          onChangeText={(ev) => {
+
+            table.aliasRules = ev; this.setState({ table: table })
+          }}
+
+        />
+        }
+        <Picker
+          label='Parent Class'
+          selectedValue={table.parentClass}
+          style={styles.input}
+          onValueChange={(itemValue, itemIndex) => {
+            table.parentClass = itemValue; this.setState({ table: table })
+          }
+          }>
+          <Picker.Item label={'None'} />
+          {
+            this.state.systemEntities && this.state.systemEntities.map((role, i) =>
+              <Picker.Item label={role.name} value={role._id} />
+            )}
+        </Picker>
         <Icon
           style={styles.input}
           name={table.icon}
@@ -232,13 +292,14 @@ class CreateTableScreen extends React.Component {
           style={styles.input}
           disabled={false}
           placeholder='Icon Name'
+          label='Icon Name'
           value={table.icon}
           onChangeText={(e) => { table.icon = e; this.setState({ table: table }) }}
         />
 
         <Text>Fields</Text>
 
-        {table.columns.map((name, index) =>
+        {!table.alias && table.columns.map((name, index) =>
 
           <Layout key={index} style={{ borderStyle: 'solid', borderBottomWidth: 1, borderBottomColor: 'grey', }}>
             <Layout style={styles.containerLayout}>
@@ -247,6 +308,7 @@ class CreateTableScreen extends React.Component {
               <Input
                 style={styles.input}
                 disabled={false}
+                label='Name '
                 placeholder='Field Name'
                 value={name.name}
                 onChangeText={(e) => { table.columns[index].name = e; this.setState({ table: table }); }}
@@ -254,6 +316,7 @@ class CreateTableScreen extends React.Component {
               <Input
                 style={styles.input}
                 disabled={false}
+                label='Display Name '
                 placeholder='Field Name'
                 value={name.displayName}
                 onChangeText={(e) => { table.columns[index].displayName = e; this.setState({ table: table }) }}
@@ -268,6 +331,7 @@ class CreateTableScreen extends React.Component {
                 style={styles.input}
                 onValueChange={(itemValue, itemIndex) => { table.columns[index].type = itemValue; this.setState({ table: table }) }
                 }>
+                <Picker.Item label="Select One" />
                 <Picker.Item label="Boolean" value="Boolean" />
                 <Picker.Item label="Password" value="Password" />
 
@@ -280,27 +344,31 @@ class CreateTableScreen extends React.Component {
                 <Picker.Item label="ObjectId" value="ObjectId" />
                 <Picker.Item label="File" value="File" />
                 <Picker.Item label="Select" value="Select" />
+                <Picker.Item label="MultiSelect" value="MultiSelect" />
+                <Picker.Item label="MultiObject" value="MultiObject" />
               </Picker>
 
               <Input
                 style={styles.input}
                 disabled={false}
+                label='Default Value '
                 placeholder='Default Value'
                 value={name.defaultValue}
                 onChangeText={(e) => { table.columns[index].defaultValue = e; this.setState({ table: table }) }}
               />
-              {name.type && name.type == 'Select' && name.options && name.options.map((opt, opti) =>
+              {name.type && (name.type == 'Select' || name.type == 'MultiSelect') && name.options && name.options.map((opt, opti) =>
                 <Input
                   style={styles.input}
                   disabled={false}
                   placeholder='Field Name'
+                  label={'Option ' + opti}
                   value={opt}
                   onChangeText={(e) => {
                     table.columns[index].options[opti] = e; this.setState({ table: table })
                   }}
                 />
               )}
-              {name.type && name.type == 'Select' && <Layout>
+              {name.type && (name.type == 'Select' || name.type == 'MultiSelect') && <Layout>
                 <Icon onPress={() => {
 
                   if (!table.columns[index].options) {
@@ -316,7 +384,7 @@ class CreateTableScreen extends React.Component {
                 />
               </Layout>}
 
-              {name.type && name.type == 'ObjectId' && this.state.systemEntities &&
+              {name.type && (name.type == 'ObjectId' || name.type == 'MultiObject') && this.state.systemEntities &&
                 <Picker
                   selectedValue={table.columns[index].targetClass}
                   style={styles.input}
@@ -324,6 +392,8 @@ class CreateTableScreen extends React.Component {
                     table.columns[index].targetClass = itemValue; this.setState({ table: table })
                   }
                   }>
+                  <Picker.Item label={"Please select Role"}
+                  />
                   {
                     this.state.systemEntities && this.state.systemEntities.map((role, i) =>
                       <Picker.Item label={role.name} value={role._id} />
@@ -377,9 +447,11 @@ class CreateTableScreen extends React.Component {
                 table.permissions[index].role = itemValue; this.setState({ table: table })
               }
               }>
+
+              <Picker.Item label={"AllowAll"} value="*" />
               {
                 this.state.roles && this.state.roles.map((role, i) =>
-                  <Picker.Item label={role.name} value={role._id} />
+                  <Picker.Item label={role.Role} value={role._id} />
                 )}
             </Picker>
             <CheckBox style={styles.input}
@@ -396,6 +468,19 @@ class CreateTableScreen extends React.Component {
               text={'Delete'}
               checked={name.delete}
               onChange={(e) => { table.permissions[index].delete = e; this.setState({ table: table }) }}
+            />
+            <CheckBox style={styles.input}
+              text={'Add'}
+              checked={name.canAdd}
+              onChange={(e) => { table.permissions[index].canAdd = e; this.setState({ table: table }) }}
+            />
+            <Input
+              style={styles.input}
+              disabled={false}
+              label='Default Value '
+              placeholder='Default Value'
+              value={name.readRule}
+              onChangeText={(e) => { table.permissions[index].readRule = e; this.setState({ table: table }) }}
             />
           </Layout>
         )}

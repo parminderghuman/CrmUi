@@ -5,8 +5,15 @@ export const loginUser =(email,password) =>{
         'Content-Type': 'application/json',
       },body: JSON.stringify({username: email,password:password})});
 }
-
+export const FetchLoginUser = (token) => {
+  return fetch(AppUrl.AppUrl
+    +"me",{method: "get", headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'authorization':token
+    }});
+}
 export default {
-    loginUser,
+    loginUser,FetchLoginUser
   };
   

@@ -1,8 +1,10 @@
 import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet,TouchableOpacity } from 'react-native';
 import { ExpoLinksView } from '@expo/samples';
-import {  Input, Layout, Select, CheckBox, List,
-  ListItem, Text ,Button} from '@ui-kitten/components';
+import {
+  Input, Layout, Select, CheckBox, List,
+  ListItem, Text, Button
+} from '@ui-kitten/components';
 import { Icon } from 'react-native-elements'
 import { bindActionCreators } from "redux";
 import { connect } from 'react-redux';
@@ -33,30 +35,49 @@ class HomeScreen extends React.Component {
     this.openTable = this.openTable.bind(this);
   }
 
-openTable(v){
-  this.props.navigation.navigate('EntityList',{
-    'system_tables':v
-  })
+  openTable(v) {
+    this.props.navigation.navigate('EntityList', {
+      'system_tables': v
+    })
 
-}
+  }
 
   componentWillReceiveProps(nextProps) {
-    
+
     if (nextProps.entities) {
       this.setState({ entities: nextProps.entities })
     }
     if (nextProps.loading) {
       this.setState({ loading: nextProps.loading })
     }
-   
+
   }
   componentDidMount() {
+    
     this.props.fetchSystemEntities("system_tables");
   }
 
   static navigationOptions = ({ navigation }) => ({
-    title: 'Tables',
-   
+    title: 'Home',
+    headerLeft: () => (
+      <Layout style={{
+        flex: 1,
+        flexDirection: 'row',
+        paddingTop: 15,
+        backgroundColor: '#fff'
+      }}>
+        <Icon
+          onPress={() => navigation.openDrawer()}
+          style={{
+            flex: 1,
+            margin: 8,
+          }}
+          name="menu"
+        />
+
+      
+      </Layout>
+    ),
   });
 
 
@@ -91,21 +112,21 @@ openTable(v){
       { text: 'ObjectId' },
       { text: 'File' },
     ];
-    const {entities} = this.state
-    
+    const { entities } = this.state
+
     return (
       <ScrollView style={styles.container}>
         {
-         
-         entities.map((v,i)=>
-          <Layout>
-            <Text>{v.name}</Text>
-            <Button onPress={(e) => this.openTable(v)}>
+
+          entities.map((v, i) =>
+            <Layout>
+              <Text>{v.name}</Text>
+              <Button onPress={(e) => this.openTable(v)}>
                 edit
             </Button>
 
-          </Layout>
-        )}
+            </Layout>
+          )}
       </ScrollView>
     );
   }

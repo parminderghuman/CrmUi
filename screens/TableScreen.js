@@ -62,10 +62,31 @@ class TableScreen extends React.Component {
     this.refreshData();
   }
   refreshData() {
+    
     this.props.fetchSystemEntities("system_tables");
   }
   static navigationOptions = ({ navigation }) => ({
     title: 'Tables',
+    headerLeft: () => (
+      <Layout style={{
+        flex: 1,
+        flexDirection: 'row',
+        paddingTop: 15,
+        backgroundColor: '#fff'
+      }}>
+        <Icon
+          onPress={() => navigation.openDrawer()}
+          style={{
+            flex: 1,
+            margin: 8,
+          }}
+          name="menu"
+        />
+
+
+      </Layout>
+    ),
+
     headerRight: () => (
       <Layout style={{
         flex: 1,
@@ -83,9 +104,11 @@ class TableScreen extends React.Component {
         />
 
         <Icon
-          onPress={() => { try { 
-            navigation.getParam("refreshData")();
-          } catch (e) { } }}
+          onPress={() => {
+            try {
+              navigation.getParam("refreshData")();
+            } catch (e) { }
+          }}
           style={{
             flex: 1,
             margin: 8,

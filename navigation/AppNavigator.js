@@ -21,7 +21,7 @@ export default createAppContainer(
     Main: createStackNavigator({MainTabNavigator:{screen:MainTabNavigator,navigationOptions:{header:null}},
       CreateTable:{screen:CreateTableScreen},
       CreateEntity:{screen:CreatEntityScreen}, 
-      EntityList:{screen:EntityList}
+     // EntityList:{screen:EntityList}
     } ),
     AuthLoading: AuthLoadingScreen,
     //CreateTable:CreateTableScreen,
