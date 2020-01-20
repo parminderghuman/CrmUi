@@ -1,11 +1,10 @@
 import React from 'react';
 import { ScrollView } from 'react-native';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, AsyncStorage } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, AsyncStorage, Alert } from 'react-native';
 import { bindActionCreators } from "redux";
 
 import { connect } from 'react-redux';
 import { ExpoLinksView } from '@expo/samples';
-import {ToastAndroid} from 'react-native';
 import * as LoginService from "../actions/login-actions";
 
 class LoginScreen extends React.Component {
@@ -17,6 +16,7 @@ class LoginScreen extends React.Component {
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+
   }
 
   handleChange(type, value) {
@@ -24,28 +24,52 @@ class LoginScreen extends React.Component {
   }
 
   async handleSubmit() {
-    var resp = await LoginService.loginUserMain(this.state.name,this.state.password)
-   // loginUser.
-    if(resp === true){
-      this.props.navigation.navigate( 'Home');
-    }else if(resp == false){
+    
+    var that = this;
+    var resp = await LoginService.loginUserMain(this.state.name, this.state.password)
+    // loginUser.
+    debugger
+    if (resp === true) {
+      this.props.navigation.navigate('Home');
+    } else if (resp == false) {
+      Alert.alert(
+        'Login Failed',
+        'Login failed wrong user credentials.',
+        [
+          {
+            text: 'Ok', onPress: () => {
 
+            }
+          },
+        ],
+        { cancelable: false },
+      );
+    } else {
+
+      Alert.alert(
+        'Network Error',
+        resp,
+        [{
+          text: 'Cancel',
+          onPress: () => console.log('Cancel Pressed'),
+          style: 'cancel',
+        },
+        {
+          text: 'Retry', onPress: () => {
+            that.handleSubmit();
+          }
+        },
+        ],
+        { cancelable: false },
+      );
     }
+
     //this.props.navigation.navigate( 'Home');
   };
 
   componentWillReceiveProps(nextProps) {
-    
-      if(nextProps.isauthenticated){
-        this.props.navigation.navigate('Main');
-      }
-      if(nextProps.error){
-        ToastAndroid.showWithGravity(
-          'All Your Base Are Belong To Us',
-          ToastAndroid.SHORT,
-          ToastAndroid.BOTTOM,
-        );
-      }
+
+
   }
 
 
@@ -56,6 +80,7 @@ class LoginScreen extends React.Component {
         <TextInput
           onChangeText={value => this.handleChange('name', value)}
           returnKeyType='next'
+          keyboardType='email-address'
           autoCorrect={false}
           onSubmitEditing={() => this.passwordInput.focus()}
           style={styles.input}
@@ -123,13 +148,13 @@ const styles = StyleSheet.create({
 const mapStateToProps = state => ({
   token: state.loginReducer.token,
   isauthenticated: state.loginReducer.isauthenticated,
-  error : state.loginReducer.error
+  error: state.loginReducer.error
 });
 
 
 const mapDispatchToProps = dispatch => {
   return bindActionCreators({
-     
+
   }, dispatch);
 }
 

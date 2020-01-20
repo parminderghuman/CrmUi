@@ -1,7 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { ExpoLinksView } from '@expo/samples';
-import { Input } from '@ui-kitten/components';
 
 export default function LinksScreen() {
   return (

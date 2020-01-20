@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import { NavigationActions } from 'react-navigation';
 import { ScrollView, Text, View, AsyncStorage } from 'react-native';
 import { StackNavigator } from 'react-navigation';
+import * as Api from '../api/entity-save';
 
 class SideMenu extends Component {
 
@@ -10,7 +11,9 @@ class SideMenu extends Component {
     super();
     this.state = {
       list: [],
-      user: {}
+      user: {},
+      parent: undefined,
+      parentClass : undefined
     };
 
   }
@@ -28,23 +31,43 @@ class SideMenu extends Component {
   _bootstrapAsync = async () => {
     var list = await AsyncStorage.getItem("UserEntities");
     var user = await AsyncStorage.getItem("User");
-    
-    list = JSON.parse(list)
-
+    var parent = undefined;
+    var parentClass = undefined
     user = JSON.parse(user)
-    
+    if (user.userType != "SuperAdmin") {
+      parentClass = JSON.parse(list)[0];
+
+      list = parentClass.childTables;
+     
+      const userToken = await AsyncStorage.getItem('userToken');
+
+     
+      var query = {};
+      
+      
+      var tableF = await Api.FetchEntities(userToken, parentClass.name, query);
+      tableF = await tableF.json();
+      parent = tableF[0];
+      
+    } else {
+      list = JSON.parse(list)
+    }
+
+
+   
+
     this.setState({
       list: list,
-      user: user
+      user: user, parent: parent
     })
     if (list && list.length > 0) {
       this.props.navigation.navigate('Home', {
-        'system_tables': list[0]
+        'system_tables': list[0],parent: parent
       });
     }
   }
   render() {
-    const { list, user } = this.state;
+    const { list, user, parent} = this.state;
     return (
       <View style={styles.container}>
         <ScrollView>
@@ -52,7 +75,7 @@ class SideMenu extends Component {
             <Text style={styles.sectionHeadingStyle}>
               {user.email}
             </Text>
-            {list.map((l, i) =>
+            {list && list.map((l, i) =>
               <View style={styles.navSectionStyle}>
                 <Text style={styles.navItemStyle} onPress={(e) => {
                   // this.props.navigation.pop(1);
@@ -61,8 +84,11 @@ class SideMenu extends Component {
                     this.props.navigation.navigate('TableListAdmin')
                   } else {
                     this.props.navigation.navigate('Home', {
-                      'system_tables': l
+                      'system_tables': l,
+                      'parent': parent,
+
                     })
+                    this.props.navigation.setParams({"Title":l.name})
                   }
                 }
 

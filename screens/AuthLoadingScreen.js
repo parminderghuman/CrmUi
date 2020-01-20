@@ -5,6 +5,7 @@ import {
   StatusBar,
   StyleSheet,
   View,
+  Alert
 
 } from 'react-native';
 
@@ -20,17 +21,28 @@ export default class AuthLoadingScreen extends React.Component {
 
   // Fetch the token from storage then navigate to our appropriate place
   _bootstrapAsync = async () => {
-    
+    var that = this;
     var result = await LoginService.fetchUserInformation()
-    
-    if(result === true){
-      this.props.navigation.navigate('Home' )
-    }else if(result === false){
-      this.props.navigation.navigate('Auth' )
-    }else{
 
+    if (result === true) {
+      this.props.navigation.navigate('Home')
+    } else if (result === false) {
+      this.props.navigation.navigate('Auth')
+    } else {
+      Alert.alert(
+        'Network Error',
+        result,
+        [
+          {
+            text: 'Retry', onPress: () => {
+              that._bootstrapAsync()
+            }
+          },
+        ],
+        { cancelable: false },
+      );
     }
-    
+
   };
 
   // Render any loading content that you like here

@@ -1,10 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet,TouchableOpacity } from 'react-native';
 import { ExpoLinksView } from '@expo/samples';
-import {
-  Input, Layout, Select, CheckBox, List,
-  ListItem, Text, Button
-} from '@ui-kitten/components';
+
 import { Icon } from 'react-native-elements'
 import { bindActionCreators } from "redux";
 import { connect } from 'react-redux';

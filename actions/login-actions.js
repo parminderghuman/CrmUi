@@ -94,16 +94,19 @@ export const loginUser = (email, password) => {
 }
 
 
-export async function loginUserMain  (email, password)  {
-   
+export async function loginUserMain(email, password) {
+    try {
         var responseJson = await API.loginUser(email, password);
         if (responseJson.status == 200) {
             await AsyncStorage.setItem('userToken', responseJson.headers.map["authorization"])
             return fetchUserInformation();
         } else {
-
+            return false;
         }
-    
+    } catch (e) {
+
+        return e.message;
+    }
 }
 
 export async function fetchUserInformation() {
@@ -111,12 +114,12 @@ export async function fetchUserInformation() {
     try {
 
         const userToken = await AsyncStorage.getItem('userToken');
-        
+
         const responseJson = await APIEntity.FetchUserEntity(userToken);
 
-        
+
         if (responseJson.status == 200) {
-            
+
             var json = await responseJson.json();
             await AsyncStorage.setItem('UserEntities', JSON.stringify(json));
             ;
@@ -126,7 +129,7 @@ export async function fetchUserInformation() {
         }
         const responseJson1 = await API.FetchLoginUser(userToken);
         if (responseJson1.status == 200) {
-            
+
             var json = await responseJson1.json();
             await AsyncStorage.setItem('User', JSON.stringify(json));
         } else {
@@ -135,7 +138,7 @@ export async function fetchUserInformation() {
         }
         return true;
     } catch (e) {
-        
+
         return e.message;
     }
 

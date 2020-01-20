@@ -12,7 +12,6 @@ import axiosMiddleware from 'redux-axios-middleware';
 import AppNavigator from './navigation/AppNavigator';
 import LoginScreen from './screens/LoginScreen';
 import store from './store';
-import { ApplicationProvider, Layout, Text } from '@ui-kitten/components';
 
 const client = axios.create({
   baseURL: 'http://localhost:8080/',
@@ -36,7 +35,7 @@ export default function App(props) {
   } else {
 
     return (
-     <ApplicationProvider mapping={mapping} theme={lightTheme}>
+    
     <Provider store={store}> 
      
 
@@ -44,7 +43,7 @@ export default function App(props) {
         {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
         <AppNavigator />
       </View></Provider>
-      </ApplicationProvider>
+     
       )
   }
 }

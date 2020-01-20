@@ -1,10 +1,7 @@
 import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet,View ,Text,Button} from 'react-native';
 import { ExpoLinksView } from '@expo/samples';
-import {
-  Input, Layout, Select, CheckBox, List,
-  ListItem, Text, Button
-} from '@ui-kitten/components';
+
 import { Icon } from 'react-native-elements'
 import { bindActionCreators } from "redux";
 import { connect } from 'react-redux';
@@ -68,7 +65,7 @@ class TableScreen extends React.Component {
   static navigationOptions = ({ navigation }) => ({
     title: 'Tables',
     headerLeft: () => (
-      <Layout style={{
+      <View style={{
         flex: 1,
         flexDirection: 'row',
         paddingTop: 15,
@@ -84,11 +81,11 @@ class TableScreen extends React.Component {
         />
 
 
-      </Layout>
+      </View>
     ),
 
     headerRight: () => (
-      <Layout style={{
+      <View style={{
         flex: 1,
         flexDirection: 'row',
         paddingTop: 15,
@@ -115,7 +112,7 @@ class TableScreen extends React.Component {
           }}
           name="refresh"
         />
-      </Layout>
+      </View>
     ),
   });
 
@@ -158,13 +155,13 @@ class TableScreen extends React.Component {
         {
 
           entities.map((v, i) =>
-            <Layout>
+            <View>
               <Text>{v.name}</Text>
-              <Button onPress={(e) => this.openTable(v)}>
-                edit
+              <Button onPress={(e) => this.openTable(v)} title={"edit"}>
+               
             </Button>
 
-            </Layout>
+            </View>
           )}
       </ScrollView>
     );

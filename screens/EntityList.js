@@ -1,10 +1,10 @@
 import React from 'react';
-import { ScrollView, StyleSheet, AsyncStorage } from 'react-native';
+import { ScrollView,
+     StyleSheet,
+     AsyncStorage ,
+    View,Text,Button} from 'react-native';
 import { ExpoLinksView } from '@expo/samples';
-import {
-    Input, Layout, Select, CheckBox, List,
-    ListItem, Text, Button
-} from '@ui-kitten/components';
+
 import { Icon } from 'react-native-elements'
 import { bindActionCreators } from "redux";
 import { connect } from 'react-redux';
@@ -15,6 +15,9 @@ class EntityList extends React.Component {
     constructor() {
         super();
         this.state = {
+            dependencyTable: {},
+            dependencyData: {},
+            dependencyDataMap: {},
             styles: StyleSheet.create({
                 container: {
                     flex: 1,
@@ -35,6 +38,8 @@ class EntityList extends React.Component {
         this.openTable = this.openTable.bind(this);
         this.refreshData = this.refreshData.bind(this);
         this.openList = this.openList.bind(this);
+        this.GetDisplayValue = this.GetDisplayValue.bind(this)
+        this.getDependendData = this.getDependendData.bind(this)
     }
 
     openTable(v) {
@@ -46,7 +51,7 @@ class EntityList extends React.Component {
         })
     }
     handleAddE() {
-        debugger
+        
         this.props.navigation.navigate('CreateEntity', {
             "system_tables": this.state.system_tables,
             "entity": undefined,
@@ -61,17 +66,35 @@ class EntityList extends React.Component {
         })
     }
     componentWillReceiveProps(nextProps) {
-        debugger
+        
         this.refreshData();
 
     }
-
+    GetDisplayValue(data, value) {
+        if (this.state.dependencyDataMap[value.targetClass] && data[value.name]) {
+          debugger
+          if(data[value.name] instanceof Array){
+            var a = data[value.name];
+          }else{
+            var a = data[value.name].split(",");
+          }
+          
+          var b = [];
+          for (var i in a) {
+            b.push(this.state.dependencyDataMap[value.targetClass][a[i]][this.state.dependencyTable[value.targetClass].name])
+    
+          }
+          return b.join(",");
+        } else {
+          return "";
+        }
+      }
 
 
     static navigationOptions = ({ navigation }) => ({
         title: navigation.getParam('Title', 'Table') + "",
         headerRight: () => (
-            <Layout style={{
+            <View style={{
                 flex: 1,
                 flexDirection: 'row',
                 paddingTop: 15,
@@ -82,7 +105,7 @@ class EntityList extends React.Component {
                         try {
                             navigation.getParam('handleAddE')()
                         } catch (e) {
-                            debugger
+                            
                         }
                     }}
                     style={{
@@ -106,9 +129,9 @@ class EntityList extends React.Component {
                     }}
                     name="refresh"
                 />
-            </Layout>
+            </View>
         ), headerLeft: () => (
-            <Layout style={{
+            <View style={{
                 flex: 1,
                 flexDirection: 'row',
                 paddingTop: 15,
@@ -124,7 +147,7 @@ class EntityList extends React.Component {
                 />
 
 
-            </Layout>
+            </View>
         ),
     });
 
@@ -164,19 +187,50 @@ class EntityList extends React.Component {
         if (parent) {
             query['parent_id'] = parent._id;
         }
-        debugger
+        
         var tableF = await API.FetchEntities(userToken, v.name, query);
-        debugger
+        
         tableF = await tableF.json();
         this.setState({
             entities: tableF, system_tables: tableS,
             parent: navigation.getParam("parent")
         })
         //const v = navigation.getParam("system_tables")
-       
+        tableS.columns.map((col, ind) => {
+            if (col.type == "ObjectId" || col.type == "MultiObject") {
+              this.getDependendData(col)
+      
+            }
+          });
 
     }
+    async getDependendData(col) {
 
+        if (col.type == "ObjectId" || col.type == "MultiObject") {
+          const token = await AsyncStorage.getItem('userToken')
+          var a = await API.FetchEntity(token, "system_tables", col.targetClass);
+          a = await a.json()
+          b = await API.FetchEntities(token, a.name);
+          b = await b.json()
+          for (var i in a.columns) {
+            if (a.columns[i].dropDownValue == true) {
+              this.state.dependencyTable[col.targetClass] = a.columns[i]
+            }
+          }
+    
+          this.state.dependencyData[col.targetClass] = b
+          this.state.dependencyDataMap[col.targetClass] = {};
+          for (i in b) {
+            this.state.dependencyDataMap[col.targetClass][b[i]._id] = b[i];
+          }
+          this.setState({
+            dependencyTable: this.state.dependencyTable,
+            dependencyData: this.state.dependencyData,
+            dependencyDataMap: this.state.dependencyDataMap
+          })
+        }
+      }
+    
     render() {
 
 
@@ -212,20 +266,25 @@ class EntityList extends React.Component {
                 {entities &&
 
                     entities.map((v, i) =>
-                        <Layout>
+                        <View>
                             {this.state.system_tables.columns.map((col, i) => {
-                                return < Text> {col.name} : {v[col.name]} </ Text>
+                                if(col.type == "MultiObject" || col.type == "ObjectId"){
+                                    return < Text> {col.name} : {this.GetDisplayValue(v,col)} </ Text>
+                                }else{
+                                    return < Text> {col.name} : {v[col.name]} </ Text>
+                                }
+                               
                             })}
-                            <Button onPress={(e) => this.openTable(v)}>
-                                edit
+                            <Button onPress={(e) => this.openTable(v)} title={"edit"}>
+                                
                  </Button>
                             {system_tables && system_tables.childTables && system_tables.childTables.map((k, i) =>
-                                <Button onPress={(e) => this.openList(k, v)}>
-                                    {k.name}
+                                <Button onPress={(e) => this.openList(k, v)} title={k.name}>
+                                    
                                 </Button>
 
                             )}
-                        </Layout>
+                        </View>
                     )}
             </ScrollView>
         );
