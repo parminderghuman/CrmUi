@@ -1,18 +1,16 @@
 import { AppLoading } from 'expo';
 import { Asset } from 'expo-asset';
-import * as Font from 'expo-font';
 import React, { useState } from 'react';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { Provider } from "react-redux";
-import { mapping, light as lightTheme } from '@eva-design/eva';
-
-import axiosMiddleware from 'redux-axios-middleware';
 import AppNavigator from './navigation/AppNavigator';
-import LoginScreen from './screens/LoginScreen';
 import store from './store';
+import { Root } from "native-base";
 
+import { Container, Text } from 'native-base';
+import * as Font from 'expo-font';
 const client = axios.create({
   baseURL: 'http://localhost:8080/',
   responseType: 'json'
@@ -20,9 +18,9 @@ const client = axios.create({
 
 //const store = createStore(reducer, applyMiddleware(axiosMiddleware(client)));
 
-
 export default function App(props) {
   const [isLoadingComplete, setLoadingComplete] = useState(false);
+
 
 
   if (!isLoadingComplete && !props.skipLoadingScreen) {
@@ -35,16 +33,16 @@ export default function App(props) {
   } else {
 
     return (
-    
-    <Provider store={store}> 
-     
 
-      <View style={styles.container}>
-        {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-        <AppNavigator />
-      </View></Provider>
-     
-      )
+      <Provider store={store}>
+
+
+        <Root >
+          {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
+          <AppNavigator  />
+        </Root></Provider>
+
+    )
   }
 }
 
@@ -59,9 +57,13 @@ async function loadResourcesAsync() {
       //...Ionicoos material themens.font,
       // We include SpaceMono because we use it in HomeScreen.js. Feel free to
       // remove this if you are not using it in your app
-      'space-mono': require('./assets/fonts/SpaceMono-Regular.ttf'),
+      //'space-mono': require('./assets/fonts/SpaceMono-Regular.ttf'),
+      Roboto: require('native-base/Fonts/Roboto.ttf'),
+      Roboto_medium: require('native-base/Fonts/Roboto_medium.ttf'),
+      ...Ionicons.font,
     }),
   ]);
+
 }
 
 function handleLoadingError(error) {

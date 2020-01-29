@@ -8,11 +8,11 @@ import CreatEntityScreen from '../screens/CreatEntityScreen';
 import EntityList from '../screens/EntityList';
 
 import LoginScreen from '../screens/LoginScreen';
+import ChatScreen  from '../screens/ChatScreen';
 
 import AuthLoadingScreen from '../screens/AuthLoadingScreen';
 const AuthStack = createStackNavigator({ SignIn:{screen:  LoginScreen , navigationOptions:{header:null}}});
 //const CreateTable = createStackNavigator({ CreateTable: CreateTableScreen });
-
 export default createAppContainer(
   createSwitchNavigator({
     Auth: AuthStack,
@@ -21,6 +21,7 @@ export default createAppContainer(
     Main: createStackNavigator({MainTabNavigator:{screen:MainTabNavigator,navigationOptions:{header:null}},
       CreateTable:{screen:CreateTableScreen},
       CreateEntity:{screen:CreatEntityScreen}, 
+      ChatScreen:{screen:ChatScreen}, 
      // EntityList:{screen:EntityList}
     } ),
     AuthLoading: AuthLoadingScreen,

@@ -1,11 +1,14 @@
 import React from 'react';
 import { ScrollView } from 'react-native';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, AsyncStorage, Alert } from 'react-native';
+import { Container, Header, Content, Form, Item, Input, Label, Button,Toast } from 'native-base';
+
 import { bindActionCreators } from "redux";
 
 import { connect } from 'react-redux';
 import { ExpoLinksView } from '@expo/samples';
 import * as LoginService from "../actions/login-actions";
+import KeyboardShift from '../utils/KeyboardShift'
 
 class LoginScreen extends React.Component {
   constructor() {
@@ -14,6 +17,7 @@ class LoginScreen extends React.Component {
       name: '',
       password: ''
     };
+    this. passwordInput;
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
 
@@ -24,26 +28,33 @@ class LoginScreen extends React.Component {
   }
 
   async handleSubmit() {
-    
+
     var that = this;
     var resp = await LoginService.loginUserMain(this.state.name, this.state.password)
     // loginUser.
-    debugger
+
     if (resp === true) {
+
+
       this.props.navigation.navigate('Home');
     } else if (resp == false) {
-      Alert.alert(
-        'Login Failed',
-        'Login failed wrong user credentials.',
-        [
-          {
-            text: 'Ok', onPress: () => {
+      // Alert.alert(
+      //   'Login Failed',
+      //   'Login failed wrong user credentials.',
+      //   [
+      //     {
+      //       text: 'Ok', onPress: () => {
 
-            }
-          },
-        ],
-        { cancelable: false },
-      );
+      //       }
+      //     },
+      //   ],
+      //   { cancelable: false },
+      // );
+      Toast.show({
+        text: "Login failed, Wrong user credentials.!",
+        textStyle: { color: "yellow" },
+        buttonText: "Okay"
+      })
     } else {
 
       Alert.alert(
@@ -74,32 +85,73 @@ class LoginScreen extends React.Component {
 
 
   render() {
+    // return (
+    //   <View style={styles.container}>
+    //     <Text style={styles.text}>Enter your name and password:</Text>
+    //     <TextInput
+    //       onChangeText={value => this.handleChange('name', value)}
+    //       returnKeyType='next'
+    //       keyboardType='email-address'
+    //       autoCorrect={false}
+    //       onSubmitEditing={() => this.passwordInput.focus()}
+    //       style={styles.input}
+    //     />
+    //     <TextInput
+    //       onChangeText={value => this.handleChange('password', value)}
+    //       secureTextEntry
+    //       returnKeyType='go'
+    //       autoCapitalize='none'
+    //       style={styles.input}
+    //       ref={input => this.passwordInput = input}
+    //     />
+    //     <TouchableOpacity
+    //       onPress={this.handleSubmit}
+    //       style={styles.button}
+    //     >
+    //       <Text style={styles.buttonText}>Login</Text>
+    //     </TouchableOpacity>
+    //   </View>
+    // );
     return (
-      <View style={styles.container}>
-        <Text style={styles.text}>Enter your name and password:</Text>
-        <TextInput
-          onChangeText={value => this.handleChange('name', value)}
-          returnKeyType='next'
-          keyboardType='email-address'
-          autoCorrect={false}
-          onSubmitEditing={() => this.passwordInput.focus()}
-          style={styles.input}
-        />
-        <TextInput
-          onChangeText={value => this.handleChange('password', value)}
-          secureTextEntry
-          returnKeyType='go'
-          autoCapitalize='none'
-          style={styles.input}
-          ref={input => this.passwordInput = input}
-        />
-        <TouchableOpacity
-          onPress={this.handleSubmit}
-          style={styles.button}
-        >
-          <Text style={styles.buttonText}>Login</Text>
-        </TouchableOpacity>
-      </View>
+      <KeyboardShift>
+      {() => (
+      <Container style={styles.container}>
+        <Content contentContainerStyle={styles.container}>
+          <Form>
+            <Item floatingLabel style={{ padding: 10 }}>
+              <Label>Username</Label>
+              <Input
+               onChangeText={value => this.handleChange('name', value)}
+                     returnKeyType='next'
+                     keyboardType='email-address'
+                     type={"email"}
+                     autoCorrect={false}
+                    // onSubmitEditing={() => {this.passwordInput.focus()}}
+                    // blurOnSubmit={false}
+
+
+                />
+            </Item>
+            <Item floatingLabel last style={{ padding: 10 }} >
+              <Label>Password</Label>
+              <Input
+                onChangeText={value => this.handleChange('password', value)}
+                secureTextEntry
+                returnKeyType='go'
+                autoCapitalize='none'
+                ref={(input) => {this.passwordInput = input}}
+              />
+            </Item>
+
+            <Button block style={{ padding: 10, color: "white" }}  onPress={this.handleSubmit} >
+              <Text style={{ color: "white" }}>Login</Text>
+            </Button>
+
+
+          </Form>
+        </Content>
+      </Container>
+      )}</KeyboardShift>
     );
   }
 }
@@ -110,10 +162,12 @@ class LoginScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
+    //alignItems: 'center',
+    backgroundColor: '#fffFF0',
     height: '100%',
-    width: '100%'
+    width: '100%',
+    flex:1, padding:10,
+    
   },
   text: {
     fontSize: 20,

@@ -1,9 +1,12 @@
 import React from 'react';
-import { ScrollView,
-     StyleSheet,
-     AsyncStorage ,
-    View,Text,Button} from 'react-native';
+import {
+    ScrollView,
+    StyleSheet,
+    AsyncStorage,
+    View, Button, FlatList
+} from 'react-native';
 import { ExpoLinksView } from '@expo/samples';
+import { Container, Header, Content, List, ListItem, Left, Body, Right, Thumbnail, Text } from 'native-base';
 
 import { Icon } from 'react-native-elements'
 import { bindActionCreators } from "redux";
@@ -42,16 +45,17 @@ class EntityList extends React.Component {
         this.getDependendData = this.getDependendData.bind(this)
     }
 
-    openTable(v) {
+    openTable(v,title) {
 
         this.props.navigation.navigate('CreateEntity', {
             "system_tables": this.state.system_tables,
             "entity": v,
-            "parent": this.state.parent
+            "parent": this.state.parent,
+            Title:title
         })
     }
     handleAddE() {
-        
+
         this.props.navigation.navigate('CreateEntity', {
             "system_tables": this.state.system_tables,
             "entity": undefined,
@@ -66,38 +70,50 @@ class EntityList extends React.Component {
         })
     }
     componentWillReceiveProps(nextProps) {
-        
+
         this.refreshData();
+        try {
+            if (this.state.Title != nextProps.navigation.getParam('Title') + "") {
+                this.setState({
+                    Title: this.props.navigation.getParam('Title')
+                });
+            }
+        } catch (e) {
+
+        }
+
 
     }
     GetDisplayValue(data, value) {
         if (this.state.dependencyDataMap[value.targetClass] && data[value.name]) {
-          debugger
-          if(data[value.name] instanceof Array){
-            var a = data[value.name];
-          }else{
-            var a = data[value.name].split(",");
-          }
-          
-          var b = [];
-          for (var i in a) {
-            b.push(this.state.dependencyDataMap[value.targetClass][a[i]][this.state.dependencyTable[value.targetClass].name])
-    
-          }
-          return b.join(",");
+
+            if (data[value.name] instanceof Array) {
+                var a = data[value.name];
+            } else {
+                var a = data[value.name].split(",");
+            }
+
+            var b = [];
+            for (var i in a) {
+                try {
+                    b.push(this.state.dependencyDataMap[value.targetClass][a[i]][this.state.dependencyTable[value.targetClass].name])
+                } catch (e) {
+
+                }
+            }
+            return b.join(",");
         } else {
-          return "";
+            return "";
         }
-      }
+    }
 
 
     static navigationOptions = ({ navigation }) => ({
-        title: navigation.getParam('Title', 'Table') + "",
+        title: navigation.getParam('Title') + "",
         headerRight: () => (
             <View style={{
-                flex: 1,
+               paddingRight:10,
                 flexDirection: 'row',
-                paddingTop: 15,
                 backgroundColor: '#fff'
             }}>
                 <Icon
@@ -105,16 +121,16 @@ class EntityList extends React.Component {
                         try {
                             navigation.getParam('handleAddE')()
                         } catch (e) {
-                            
+
                         }
                     }}
                     style={{
-                        flex: 1,
-                        margin: 8,
+                        paddingRight:10,
                     }}
-                    name="add"
+                    type="font-awesome"
+                    name="plus"
                 />
-
+<Text>  </Text>
                 <Icon
                     onPress={() => {
                         try {
@@ -124,9 +140,10 @@ class EntityList extends React.Component {
                         }
                     }}
                     style={{
-                        flex: 1,
-                        margin: 8,
+                        paddingRight:10,
                     }}
+                    type="font-awesome"
+
                     name="refresh"
                 />
             </View>
@@ -134,16 +151,18 @@ class EntityList extends React.Component {
             <View style={{
                 flex: 1,
                 flexDirection: 'row',
-                paddingTop: 15,
+                
                 backgroundColor: '#fff'
             }}>
                 <Icon
                     onPress={() => navigation.openDrawer()}
                     style={{
-                        flex: 1,
                         margin: 8,
+                        padding:4
                     }}
-                    name="menu"
+                    type="font-awesome"
+
+                    name="bars"
                 />
 
 
@@ -166,11 +185,11 @@ class EntityList extends React.Component {
                 system_tables: navigation.getParam("system_tables"),
                 parent: navigation.getParam("parent")
             });
-           
+
 
         }
         const v = navigation.getParam("system_tables")
-        
+
 
         //this.props.fetchEntities("system_tables");
     }
@@ -187,9 +206,9 @@ class EntityList extends React.Component {
         if (parent) {
             query['parent_id'] = parent._id;
         }
-        
+
         var tableF = await API.FetchEntities(userToken, v.name, query);
-        
+
         tableF = await tableF.json();
         this.setState({
             entities: tableF, system_tables: tableS,
@@ -198,39 +217,39 @@ class EntityList extends React.Component {
         //const v = navigation.getParam("system_tables")
         tableS.columns.map((col, ind) => {
             if (col.type == "ObjectId" || col.type == "MultiObject") {
-              this.getDependendData(col)
-      
+                this.getDependendData(col)
+
             }
-          });
+        });
 
     }
     async getDependendData(col) {
 
         if (col.type == "ObjectId" || col.type == "MultiObject") {
-          const token = await AsyncStorage.getItem('userToken')
-          var a = await API.FetchEntity(token, "system_tables", col.targetClass);
-          a = await a.json()
-          b = await API.FetchEntities(token, a.name);
-          b = await b.json()
-          for (var i in a.columns) {
-            if (a.columns[i].dropDownValue == true) {
-              this.state.dependencyTable[col.targetClass] = a.columns[i]
+            const token = await AsyncStorage.getItem('userToken')
+            var a = await API.FetchEntity(token, "system_tables", col.targetClass);
+            a = await a.json()
+            b = await API.FetchEntities(token, a.name);
+            b = await b.json()
+            for (var i in a.columns) {
+                if (a.columns[i].dropDownValue == true) {
+                    this.state.dependencyTable[col.targetClass] = a.columns[i]
+                }
             }
-          }
-    
-          this.state.dependencyData[col.targetClass] = b
-          this.state.dependencyDataMap[col.targetClass] = {};
-          for (i in b) {
-            this.state.dependencyDataMap[col.targetClass][b[i]._id] = b[i];
-          }
-          this.setState({
-            dependencyTable: this.state.dependencyTable,
-            dependencyData: this.state.dependencyData,
-            dependencyDataMap: this.state.dependencyDataMap
-          })
+
+            this.state.dependencyData[col.targetClass] = b
+            this.state.dependencyDataMap[col.targetClass] = {};
+            for (i in b) {
+                this.state.dependencyDataMap[col.targetClass][b[i]._id] = b[i];
+            }
+            this.setState({
+                dependencyTable: this.state.dependencyTable,
+                dependencyData: this.state.dependencyData,
+                dependencyDataMap: this.state.dependencyDataMap
+            })
         }
-      }
-    
+    }
+
     render() {
 
 
@@ -261,32 +280,122 @@ class EntityList extends React.Component {
         ];
         const { entities, system_tables } = this.state
 
-        return (
-            <ScrollView style={styles.container}>
-                {entities &&
+        return (<Container>
 
-                    entities.map((v, i) =>
-                        <View>
-                            {this.state.system_tables.columns.map((col, i) => {
-                                if(col.type == "MultiObject" || col.type == "ObjectId"){
-                                    return < Text> {col.name} : {this.GetDisplayValue(v,col)} </ Text>
-                                }else{
-                                    return < Text> {col.name} : {v[col.name]} </ Text>
+            <Content>
+
+                {entities && <List>
+
+                    {entities.map((item, index) => {
+                        debugger
+                        const v = item
+                        var obj = { 'main': "", 'sec': undefined };
+                        this.state.system_tables.columns.map((col, i) => {
+                            if (col.dropDownValue) {
+                                if (col.type == "MultiObject" || col.type == "ObjectId") {
+                                    obj['main'] = this.GetDisplayValue(v, col)
+                                } else if (col.type == "Address" && v[col.name]) {
+                                    obj['main'] = JSON.stringify(v[col.name])
                                 }
-                               
-                            })}
-                            <Button onPress={(e) => this.openTable(v)} title={"edit"}>
-                                
-                 </Button>
-                            {system_tables && system_tables.childTables && system_tables.childTables.map((k, i) =>
-                                <Button onPress={(e) => this.openList(k, v)} title={k.name}>
-                                    
-                                </Button>
+                                else {
+                                    obj['main'] = v[col.name]
+                                }
+                            } else if (col.listValue) {
+                                var a = '';
 
-                            )}
-                        </View>
+                                if (col.type == "MultiObject" || col.type == "ObjectId") {
+                                    a = this.GetDisplayValue(v, col)
+                                } else if (col.type == "Address" && v[col.name]) {
+                                    a = JSON.stringify(v[col.name])
+                                }
+                                else {
+                                    a = v[col.name]
+                                }
+
+                                if (!obj['sec']) {
+                                    obj['sec'] = a
+                                } else {
+                                    obj['sec'] += ", " + a
+                                }
+                            }
+                        });
+                        return <ListItem avatar onPress={(e) => this.openTable(item,obj['main'])} title={"edit"}>
+                            <Body  style={{ flexDirection: "row"}}>
+                                <View style={{flex:1}}><Text>{obj['main']}</Text>
+                                <Text note>{obj['sec']}</Text>
+                                </View>
+                                <View ><Text style={{flex:1}}></Text>
+                                     <Text note style={{bottom:0,position:"relative",right:0}}>{new Date(item.updateAt).toLocaleString()}</Text>
+                                </View>
+                            </Body>
+                            <Right style={{ flexDirection: "row",alignContent:'center',alignItems:'center' }}>
+
+
+                               
+                               
+                                <Icon name="chevron-right"
+                                    type="font-awesome"
+                                    size={10}
+                                ></Icon>
+
+                            </Right>
+                        </ListItem>
+                    }
+                        // <View>
+                        //     {this.state.system_tables.columns.map((col, i) => {
+                        //         const v = item
+
+                        //         if (col.type == "MultiObject" || col.type == "ObjectId") {
+                        //             return < Text> {col.displayName} : {this.GetDisplayValue(v, col)} </ Text>
+                        //         } if (col.type == "Address" && v[col.name]) {
+                        //             return < Text> {col.displayName} : {JSON.stringify(v[col.name])} </ Text>
+                        //         }
+                        //         else {
+                        //             return < Text> {col.displayName} : {v[col.name]} </ Text>
+                        //         }
+
+                        //     })}
+                        //     <Button onPress={(e) => this.openTable(item.item)} title={"edit"}>
+
+                        //     </Button>
+                        //     {system_tables && system_tables.childTables && system_tables.childTables.map((k, i) =>
+                        //         <Button onPress={(e) => this.openList(k, item.item)} title={k.name}>
+
+                        //         </Button>
+
+                        //     )}
+                        // </View>
                     )}
-            </ScrollView>
+                </List>
+
+                    //     entities.map((v, i) =>
+                    //         <View>
+                    //             {this.state.system_tables.columns.map((col, i) => {
+                    //                 if(col.type == "MultiObject" || col.type == "ObjectId"){
+                    //                     return < Text> {col.name} : {this.GetDisplayValue(v,col)} </ Text>
+                    //                 } if(col.type == "Address" && v[col.name]){
+                    //                     return < Text> {col.name} : {JSON.stringify(v[col.name])} </ Text>
+                    //                 }
+                    //                 else{
+                    //                     return < Text> {col.name} : {v[col.name]} </ Text>
+                    //                 }
+
+                    //             })}
+                    //             <Button onPress={(e) => this.openTable(v)} title={"edit"}>
+
+                    //  </Button>
+                    //             {system_tables && system_tables.childTables && system_tables.childTables.map((k, i) =>
+                    //                 <Button onPress={(e) => this.openList(k, v)} title={k.name}>
+
+                    //                 </Button>
+
+                    //             )}
+                    //         </View>
+                    //     )
+                }
+
+            </Content>
+        </Container>
         );
     }
 }

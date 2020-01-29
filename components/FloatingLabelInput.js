@@ -23,6 +23,7 @@ export default class FloatingLabelInput extends Component {
   render() {
     const { label, ...props } = this.props;
     const labelStyle = {
+      minWidth:500,
       position: 'absolute',
       left: 0,
       top: this._animatedIsFocused.interpolate({
