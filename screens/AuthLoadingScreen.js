@@ -5,9 +5,10 @@ import {
   StatusBar,
   StyleSheet,
   View,
-  Alert
+  Alert,Dimensions
 
 } from 'react-native';
+import { Container, Header, Content, Form, Item, Input, Label, Button, Toast, ListItem, List, Left, Body, Right, Spinner } from 'native-base';
 
 
 import API from "../api/entity-save";
@@ -72,10 +73,11 @@ export default class AuthLoadingScreen extends React.Component {
   // Render any loading content that you like here
   render() {
     return (
-      <View>
-        <ActivityIndicator />
-        <StatusBar barStyle="default" />
-      </View>
+      <View style={{
+        backgroundColor: "rgba(12, 12, 12, .5)",
+        position: "absolute", alignItems: "center", justifyContent: "center", flex: 1, width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height
+      }}><Spinner color='blue' /></View>
     );
   }
 }

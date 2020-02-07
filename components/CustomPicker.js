@@ -16,8 +16,9 @@ import {
   Modal,
   TouchableHighlightBase
 } from 'react-native';
+import { Icon } from 'react-native-elements'
+
 var { width, height } = Dimensions.get('window');
-import Icon from 'react-native-vector-icons/Ionicons';
 
 export default class CustomPicker extends Component {
   constructor(props) {
@@ -65,7 +66,7 @@ export default class CustomPicker extends Component {
         })
       }
     } else {
-      debugger
+      
       if (selected.indexOf(item) == -1) {
         selected = [item]
         this.setState({
@@ -130,25 +131,22 @@ export default class CustomPicker extends Component {
     return (
       <Modal
       animationType="slide"
-      transparent={false}
+      transparent={true}
       visible={true} >
-      <View onLayout={(evt) => { this.getNewDimensions(evt) }} style={{
-          flex: .5,
-         
-          justifyContent: 'center',
-         margin:0
-       }} >
+                <View style={{ backgroundColor: "rgba(12, 12, 12, .5)", alignItems: "center", justifyContent: "center", flex: 1 }}>
+                <View style={{ backgroundColor: "white", margin: 30, borderRadius: 10, alignSelf: "stretch" }}>
+                <View style={{ borderBottomLeftRadius: 10, borderBottomRightRadius: 10, padding: 10 }}>
         {this.props.search && <View style={{ flexDirection: 'row', height: 55 }}>
           <View style={{ marginTop: 15, marginLeft: 15, backgroundColor: 'transparent' }}>
-            <Icon name="ios-search-outline" color={this.props.iconColor} size={25} />
+            <Icon name="search" type="font-awesome" color={this.props.iconColor} size={20} />
           </View>
           <TextInput
             style={{
-              width: this.state.pageWidth - 20,
+              flex:1,
               height: 35,
               margin: 0,
               marginTop: 10,
-              marginLeft: -25,
+              marginLeft: -30,
               padding: 5,
               paddingLeft: 30,
               borderColor: this.props.iconColor,
@@ -191,18 +189,20 @@ export default class CustomPicker extends Component {
                 {
 
                   this._isSelected(itemKey) ?
-                    <Icon name={this.props.selectedIconName} color={this.props.iconColor} size={this.props.iconSize} />
+                    <Icon name={'check-circle-o'} type="font-awesome"  color={this.props.iconColor} size={this.props.iconSize} />
                     :
-                    <Icon name={this.props.unselectedIconName} color={this.props.iconColor} size={this.props.iconSize} />
+                    <Icon name={'circle-o'}  type="font-awesome"   color={this.props.iconColor} size={this.props.iconSize} />
                 }
               </TouchableOpacity>
             )
           })}
         </ScrollView>
         <View>
-          <Button title="Ok" onPress={() => {
+          <Button title="Done" onPress={() => {
             this.props.onDone()
           }} />
+        </View>
+        </View>
         </View>
       </View>
       </Modal>

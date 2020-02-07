@@ -14,6 +14,7 @@ import { DrawerNavigator ,StackNavigator,createSwitchNavigator} from 'react-navi
 import SideMenu from "../screens/SideMenu";
 import { createDrawerNavigator } from 'react-navigation-drawer';
 import EntityList from '../screens/EntityList';
+import ChatListScreen from '../screens/ChatListScreen';
 
 const config = Platform.select({
   web: { headerMode: 'screen' },
@@ -91,11 +92,30 @@ TableScreenStack.navigationOptions = {
 };
 
 TableScreenStack.path = 'TableListAdmin';
+
+const ChatListStack = createStackNavigator(
+  {
+    ChatListScreen: ChatListScreen,
+   // CreateTable : createStackNavigator({ CreateTable: {screen:CreateTableScreen, navigationOptions:{header:null}} })
+  },
+  config,
+  
+);
+ChatListStack.navigationOptions = {
+  tabBarLabel: 'ChatListScreen',
+  tabBarIcon: ({ focused }) => (
+    <TabBarIcon focused={focused} name={Platform.OS === 'ios' ? 'ios-options' : 'md-options'} />
+  ),
+};
+
+ChatListStack.path = 'ChatListScreen';
 const sn =  createSwitchNavigator({
   HomeStack:{screen:HomeStack,navigationOptions:{header:null}},
   LinksStack:{screen:LinksStack,navigationOptions:{header:null}},
   SettingsStack:{screen:SettingsStack,navigationOptions:{header:null}},
   TableScreenStack:{screen:TableScreenStack,navigationOptions:{header:null}},
+  ChatListStack:{screen:ChatListStack,navigationOptions:{header:null}},
+},{
 },{
  
 });

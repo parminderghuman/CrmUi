@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet,View ,Text,Button} from 'react-native';
+import { ScrollView, StyleSheet,View ,Text,Button,AsyncStorage} from 'react-native';
 import { ExpoLinksView } from '@expo/samples';
 
 import { Icon } from 'react-native-elements'
@@ -33,11 +33,21 @@ class TableScreen extends React.Component {
     this.refreshData = this.refreshData.bind(this);
   }
 
-  openTable(v) {
-
-    this.props.navigation.navigate('CreateTable', {
+  async openTable(v) {
+    var user = await AsyncStorage.getItem("User");
+    user = JSON.parse(user)
+    
+    if(user.userType == "CompanyAdmin" ){
+      this.props.navigation.navigate('PermissionsScreen', {
+        'id': v._id,
+        "parent":this.props.navigation.getParam("parent")
+      })
+    }
+    else{
+      this.props.navigation.navigate('CreateTable', {
       'id': v._id
     })
+  }
   }
 
   componentWillReceiveProps(nextProps) {

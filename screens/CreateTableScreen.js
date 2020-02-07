@@ -17,6 +17,7 @@ class CreateTableScreen extends React.Component {
   constructor() {
     super();
     this.state = {
+      ViewColumns: true,
       roles: [],
       systemEntities: [],
       isNew: false,
@@ -255,7 +256,7 @@ class CreateTableScreen extends React.Component {
                     table.name = ev; this.setState({ table: table })
                   }}
                 />
-              </Item> 
+              </Item>
               <Item floatingLabel style={{ padding: 10 }}>
                 <Label>Display Name</Label>
                 <Input
@@ -333,235 +334,347 @@ class CreateTableScreen extends React.Component {
                 </ListItem>
                 <ListItem itemDivider>
                   <Text>Fields</Text>
+                  <Icon
+                    type="font-awesome"
+                    name={this.state.ViewColumns ? 'chevron-down' : 'chevron-up'}
+                    onPress={() => {
+                      this.setState({
+                        ViewColumns: !this.state.ViewColumns
+                      })
+                    }}
+                  ></Icon>
                 </ListItem>
 
-                {!table.alias && table.columns.map((name, index) =>
 
-                  <ListItem key={index} style={{ flexDirection: 'column' }}>
-                    <Item floatingLabel style={{ padding: 0 }} >
+                {this.state.ViewColumns && !table.alias && table.columns.map((name, index) => {
 
-                      <Label>{index}</Label>
-                    </Item>
+                  if (!this.state.ViewColumnsIndex) {
+                    this.state.ViewColumnsIndex = {}
+                  }
+                  if (typeof (this.state.ViewColumnsIndex[index]) == "undefined") {
+                    this.state.ViewColumnsIndex[index] = true;
+                  }
+                  return <ListItem key={index} style={{ flexDirection: 'column' }}>
+                    <View itemDivider style={{ padding: 10, width: "100%", backgroundColor:table.columns[index].type =="Section"?"blue": "grey", margin: 10, flexDirection: "row" }} >
 
-                    <Item floatingLabel style={{ padding: 0 }} >
-
-                      <Label>Name</Label>
-                      <Input
-                        style={styles.input}
-                        disabled={false}
-                        label='Name '
-                        value={name.name}
-                        onChangeText={(e) => { table.columns[index].name = e; this.setState({ table: table }); }}
-                      />
-                    </Item>
-                    <Item floatingLabel style={{ padding: 0 }} >
-
-                      <Label>Display Name</Label>
-                      <Input
-                        style={styles.input}
-                        disabled={false}
-                        label='Display Name '
-                        value={name.displayName}
-                        onChangeText={(e) => { table.columns[index].displayName = e; this.setState({ table: table }) }}
-
-                      />
-                    </Item>
-                    <Item floatingLabel style={{ padding: 0 }} >
-
-                      <Label>Default Value </Label>
-                      <Input
-                        style={styles.input}
-                        disabled={false}
-                        label='Default Value '
-                        value={name.defaultValue}
-                        onChangeText={(e) => { table.columns[index].defaultValue = e; this.setState({ table: table }) }}
-
-                      />
-                    </Item>
-
-                    <Item >
-                      <Text>Column Type</Text>
-                      <Picker
-                        selectedValue={name.type}
-                        style={styles.input}
-                        onValueChange={(itemValue, itemIndex) => { table.columns[index].type = itemValue; this.setState({ table: table }) }
-                        }>
-                        <Picker.Item label="Select One" />
-                        <Picker.Item label="Boolean" value="Boolean" />
-                        <Picker.Item label="Password" value="Password" />
-
-                        <Picker.Item label="Integer" value="Integer" />
-                        <Picker.Item label="Double" value="Double" />
-                        <Picker.Item label="Date" value="Date" />
-
-                        <Picker.Item label="Long" value="Long" />
-                        <Picker.Item label="String" value="String" />
-                        <Picker.Item label="ObjectId" value="ObjectId" />
-                        <Picker.Item label="File" value="File" />
-                        <Picker.Item label="Select" value="Select" />
-                        <Picker.Item label="MultiSelect" value="MultiSelect" />
-                        <Picker.Item label="MultiObject" value="MultiObject" />
-                        <Picker.Item label="Address" value="Address" />
-                      </Picker>
-                    </Item>
-
-
-
-
-                    {name.type && (name.type == 'Select' || name.type == 'MultiSelect') && name.options && name.options.map((opt, opti) =>
-                      <Item floatingLabel style={{ padding: 0 }} >
-
-                        <Label>{'Option ' + opti} </Label>
-                        <Input
-                          style={styles.input}
-                          disabled={false}
-                          label={'Option ' + opti}
-                          value={opt}
-                          onChangeText={(e) => {
-                            table.columns[index].options[opti] = e; this.setState({ table: table })
-                          }}
-                        />
-                      </Item>
-
-                    )}
-
-                    {name.type && (name.type == 'Select' || name.type == 'MultiSelect') && <Item>
-                      <Icon onPress={() => {
-
-                        if (!table.columns[index].options) {
-                          table.columns[index].options = [];
-                        }
-                        table.columns[index].options.push("");
-                        this.setState({ table: table })
-
-                      }
-                      }
-                        style={styles.input}
-                        name="plus-circle"
+                      <Label>{index + " " + name.displayName}</Label>
+                      {index != 0 && <Icon
                         type="font-awesome"
-                      />
-                    </Item>}
+                        name='arrow-up'
+                        style={{ position: "absolute", right: 0 }}
+                        onPress={() => {
+                          
+                          if(typeof(this.state.index) != "undefined" && this.state.index !=null && this.state.index !="" && this.state.index != index){
+                            if(this.state.index < 0){
+                              this.state.index = 0
+                            }else if( this.state.index >= table.columns.length  ){
+                              this.state.index= table.columns.length -1;
+                            }
+                           
+                            if(index < this.state.index){
+                              //3 ,5
+                                var b = table.columns[index];//3 
+                                for(var i = index ;i< this.state.index; i++){
+                                  table.columns[i] = table.columns[i+1]
+                                }
+                                table.columns[this.state.index] = b;
+                              
+                              }else{
+                                //5,3
+                                var b = table.columns[index];//5
+                                for(var i = index ;i> this.state.index; i--){
+                                  table.columns[i] = table.columns[i-1]
+                                }
+                                table.columns[this.state.index] = b;
+                              }
+                               this.setState({ table: table,index:undefined });
+                          }else{
+                          var a = table.columns[index - 1];
+                          table.columns[index - 1] = table.columns[index]
+                          table.columns[index] = a;
+                          this.setState({ table: table });
+                          } 
+                        }}
+                      ></Icon>}
+                      {table.columns.length - 1 != index && <Icon
+                        type="font-awesome"
+                        name='arrow-down'
+                        style={{ position: "absolute", right: 0 }}
+                        onPress={() => {
+                          if(typeof(this.state.index) != "undefined" && this.state.index !=null && this.state.index !="" && this.state.index != index){
 
-
-
-
-
-                    {name.type && (name.type == 'ObjectId' || name.type == 'MultiObject') && this.state.systemEntities &&
-
-                      <Item>
-                        <Text>Role</Text>
-                        <Picker
-                          selectedValue={table.columns[index].targetClass}
-                          style={styles.input}
-                          onValueChange={(itemValue, itemIndex) => {
-                            table.columns[index].targetClass = itemValue; this.setState({ table: table })
+                          }else{
+                            var a = table.columns[index + 1];
+                          table.columns[index + 1] = table.columns[index]
+                          table.columns[index] = a;
+                          this.setState({ table: table });
                           }
-                          }>
-                          <Picker.Item label={"Please select Role"}
-                          />
-                          {
-                            this.state.systemEntities && this.state.systemEntities.map((role, i) =>
-                              <Picker.Item label={role.name} value={role._id} />
-                            )}
-                        </Picker>
+                         
 
-
-                      </Item>
-                    }
-                    {name.type && (name.type == 'ObjectId' || name.type == 'MultiObject') && this.state.systemEntities &&
-                      <Item floatingLabel style={{ padding: 0 }} >
-
-                        <Label>{'Role Condition '} </Label>
-                        <Input
-                          style={styles.input}
-                          disabled={false}
-                          label='Condition'
-                          value={name.defaultValue}
-                          onChangeText={(e) => { table.columns[index].condition = e; this.setState({ table: table }) }}
-                        />
-                      </Item>
-
-
-                    }
-
-
-                    <Item >
-
-                      <Left><Text>Is Null</Text></Left>
-                      <Right>
-                        <Switch
-                          text={'Is Null'}
-                          value={name.nullValue}
-                          onValueChange={(e) => {
-                            ;
-                            table.columns[index].nullValue = e; this.setState({ table: table })
-                          }}
-                        />
-                      </Right>
-                    </Item>
-                    <Item >
-                      <Left><Text>dropDownValue</Text></Left>
-                      <Right>
-                        <Switch
-
-                          text={'dropDownValue'}
-                          value={name.dropDownValue}
-                          onValueChange={(e) => {
-
-                            name.dropDownValue = e; this.setState({ table: table })
-                          }}
-                        />
-                      </Right>
-
-                    </Item>
-                    <Item >
-                      <Left><Text>Unique</Text></Left>
-                      <Right>
-                        <Switch
-
-                          text={'Unique'}
-                          value={name.uniqueValue}
-                          onValueChange={(e) => { table.columns[index].uniqueValue = e; this.setState({ table: table }) }}
-
-                        />
-                      </Right>
-
-                    </Item> 
-                     <Item >
-                      <Left><Text>List Value</Text></Left>
-                      <Right>
-                        <Switch
-
-                          text={'listValue'}
-                          value={name.listValue}
-                          onValueChange={(e) => { table.columns[index].listValue = e; this.setState({ table: table }) }}
-
-                        />
-                      </Right>
-
-                    </Item>
-                    <Item ></Item>
-                    <Item >
+                        }}
+                      ></Icon>}
                       <Icon
                         type="font-awesome"
-                        name="trash"
-                        onPress={(e) => { table.columns.splice(index, 1); this.setState({ table: table }) }}
-                      />
-                    </Item>
+                        name={(!this.state.ViewColumnsIndex || !this.state.ViewColumnsIndex[index]) ? 'chevron-down' : 'chevron-up'}
+                        style={{ position: "absolute", right: 0 }}
+                        onPress={() => {
+
+                          this.state.ViewColumnsIndex[index] = !this.state.ViewColumnsIndex[index];
+                          this.setState({
+                            ViewColumnsIndex: this.state.ViewColumnsIndex
+                          })
+                        }}
+                      ></Icon>
+                      <Input
+                          style={{width:5,height:20,backgroundColor:"#fff",flex:.2}}
+                          disabled={false}
+                          label='Name '
+                          id={index+"asdsada"}
+                          value={this.state.index}
+                          keyboardType={'numeric'}
+                          
+                          onChangeText={(e) => {  this.setState({ index: e }); }}
+                        />
+                    </View>
+                    {!this.state.ViewColumnsIndex[index] && <View style={{ alignSelf: 'stretch', flex: 1 }}>
+
+
+
+                      <Item floatingLabel style={{ padding: 0 }} >
+
+                        <Label>Name</Label>
+                        <Input
+                          style={styles.input}
+                          disabled={false}
+                          label='Name '
+                          value={name.name}
+                          onChangeText={(e) => { table.columns[index].name = e; this.setState({ table: table }); }}
+                        />
+                      </Item>
+                      <Item floatingLabel style={{ padding: 0 }} >
+
+                        <Label>Display Name</Label>
+                        <Input
+                          style={styles.input}
+                          disabled={false}
+                          label='Display Name '
+                          value={name.displayName}
+                          onChangeText={(e) => { table.columns[index].displayName = e; this.setState({ table: table }) }}
+
+                        />
+                      </Item>
+                      <Item floatingLabel style={{ padding: 0 }} >
+
+                        <Label>Default Value </Label>
+                        <Input
+                          style={styles.input}
+                          disabled={false}
+                          label='Default Value '
+                          value={name.defaultValue}
+                          onChangeText={(e) => { table.columns[index].defaultValue = e; this.setState({ table: table }) }}
+
+                        />
+                      </Item>
+
+                      <Item >
+                        <Text>Column Type</Text>
+                        <Picker
+                          selectedValue={name.type}
+                          style={styles.input}
+                          onValueChange={(itemValue, itemIndex) => { table.columns[index].type = itemValue; this.setState({ table: table }) }
+                          }>
+                          <Picker.Item label="Select One" />
+                          <Picker.Item label="Boolean" value="Boolean" />
+                          <Picker.Item label="Password" value="Password" />
+
+                          <Picker.Item label="Integer" value="Integer" />
+                          <Picker.Item label="Double" value="Double" />
+                          <Picker.Item label="Date" value="Date" />
+
+                          <Picker.Item label="Long" value="Long" />
+                          <Picker.Item label="String" value="String" />
+                          <Picker.Item label="ObjectId" value="ObjectId" />
+                          <Picker.Item label="File" value="File" />
+                          <Picker.Item label="Select" value="Select" />
+                          <Picker.Item label="MultiSelect" value="MultiSelect" />
+                          <Picker.Item label="MultiObject" value="MultiObject" />
+                          <Picker.Item label="Address" value="Address" />
+                          <Picker.Item label="Section" value="Section" />
+                        </Picker>
+                      </Item>
+
+
+
+
+                      {name.type && (name.type == 'Select' || name.type == 'MultiSelect') && name.options && name.options.map((opt, opti) =>
+                        <Item floatingLabel style={{ padding: 0 }} >
+
+                          <Label>{'Option ' + opti} </Label>
+                          <Input
+                            style={styles.input}
+                            disabled={false}
+                            label={'Option ' + opti}
+                            value={opt}
+                            onChangeText={(e) => {
+                              table.columns[index].options[opti] = e; this.setState({ table: table })
+                            }}
+                          />
+                        </Item>
+
+                      )}
+
+                      {name.type && (name.type == 'Select' || name.type == 'MultiSelect') && <Item>
+                        <Icon onPress={() => {
+
+                          if (!table.columns[index].options) {
+                            table.columns[index].options = [];
+                          }
+                          table.columns[index].options.push("");
+                          this.setState({ table: table })
+
+                        }
+                        }
+                          style={styles.input}
+                          name="plus-circle"
+                          type="font-awesome"
+                        />
+                      </Item>}
+
+
+
+
+
+                      {name.type && (name.type == 'ObjectId' || name.type == 'MultiObject') && this.state.systemEntities &&
+
+                        <Item>
+                          <Text>Role</Text>
+                          <Picker
+                            selectedValue={table.columns[index].targetClass}
+                            style={styles.input}
+                            onValueChange={(itemValue, itemIndex) => {
+                              table.columns[index].targetClass = itemValue; this.setState({ table: table })
+                            }
+                            }>
+                            <Picker.Item label={"Please select Role"}
+                            />
+                            {
+                              this.state.systemEntities && this.state.systemEntities.map((role, i) =>
+                                <Picker.Item label={role.name} value={role._id} />
+                              )}
+                          </Picker>
+
+
+                        </Item>
+                      }
+                      {name.type && (name.type == 'ObjectId' || name.type == 'MultiObject') && this.state.systemEntities &&
+                        <Item floatingLabel style={{ padding: 0 }} >
+
+                          <Label>{'Role Condition '} </Label>
+                          <Input
+                            style={styles.input}
+                            disabled={false}
+                            label='Condition'
+                            value={name.defaultValue}
+                            onChangeText={(e) => { table.columns[index].condition = e; this.setState({ table: table }) }}
+                          />
+                        </Item>
+
+
+                      }
+
+                      {name.type && (name.type == 'ObjectId' || name.type == 'MultiObject') && <Item >
+
+                        <Left><Text>Is participant</Text></Left>
+                        <Right>
+                          <Switch
+                            text={'Is participant'}
+                            value={name.participant}
+                            onValueChange={(e) => {
+                              ;
+                              table.columns[index].participant = e; this.setState({ table: table })
+                            }}
+                          />
+                        </Right>
+                      </Item>}
+                      <Item >
+
+                        <Left><Text>Is Null</Text></Left>
+                        <Right>
+                          <Switch
+                            text={'Is Null'}
+                            value={name.nullValue}
+                            onValueChange={(e) => {
+                              ;
+                              table.columns[index].nullValue = e; this.setState({ table: table })
+                            }}
+                          />
+                        </Right>
+                      </Item>
+                      <Item >
+                        <Left><Text>dropDownValue</Text></Left>
+                        <Right>
+                          <Switch
+
+                            text={'dropDownValue'}
+                            value={name.dropDownValue}
+                            onValueChange={(e) => {
+
+                              name.dropDownValue = e; this.setState({ table: table })
+                            }}
+                          />
+                        </Right>
+
+                      </Item>
+                      <Item >
+                        <Left><Text>Unique</Text></Left>
+                        <Right>
+                          <Switch
+
+                            text={'Unique'}
+                            value={name.uniqueValue}
+                            onValueChange={(e) => { table.columns[index].uniqueValue = e; this.setState({ table: table }) }}
+
+                          />
+                        </Right>
+
+                      </Item>
+                      <Item >
+                        <Left><Text>List Value</Text></Left>
+                        <Right>
+                          <Switch
+
+                            text={'listValue'}
+                            value={name.listValue}
+                            onValueChange={(e) => { table.columns[index].listValue = e; this.setState({ table: table }) }}
+
+                          />
+                        </Right>
+
+                      </Item>
+                      <Item ></Item>
+                      <Item >
+                        <Icon
+                          type="font-awesome"
+                          name="trash"
+                          onPress={(e) => { table.columns.splice(index, 1); this.setState({ table: table }) }}
+                        />
+                      </Item>
+                    </View>
+                    }
                   </ListItem>
-                )}
+                })}
               </List>
-              <ListItem   onPress={() => this.addColumn()}>
+              <ListItem onPress={() => this.addColumn()}>
                 <Icon
-                  
+
                   name="plus-circle" type="font-awesome"
                   onPress={() => this.addColumn()}
                 />
               </ListItem>
-              <ListItem  itemDivider onPress={() => this.addColumn()}>
-              <Text>Permisions</Text>
+              <ListItem itemDivider onPress={() => this.addColumn()}>
+                <Text>Permisions</Text>
               </ListItem>
-             
+
               {
                 table.permissions && table.permissions.map((name, index) =>
                   <View>

@@ -3,10 +3,10 @@ import {
     ScrollView,
     StyleSheet,
     AsyncStorage,
-    View, Button, FlatList
+    View, Button, FlatList, Dimensions
 } from 'react-native';
 import { ExpoLinksView } from '@expo/samples';
-import { Container, Header, Content, List, ListItem, Left, Body, Right, Thumbnail, Text } from 'native-base';
+import { Spinner, Container, Header, Content, List, ListItem, Left, Body, Right, Thumbnail, Text, SwipeRow } from 'native-base';
 
 import { Icon } from 'react-native-elements'
 import { bindActionCreators } from "redux";
@@ -18,6 +18,7 @@ class EntityList extends React.Component {
     constructor() {
         super();
         this.state = {
+            isLoading: false,
             dependencyTable: {},
             dependencyData: {},
             dependencyDataMap: {},
@@ -45,13 +46,15 @@ class EntityList extends React.Component {
         this.getDependendData = this.getDependendData.bind(this)
     }
 
-    openTable(v,title) {
-
+    openTable(v, title) {
+        var s = this.state
+        
         this.props.navigation.navigate('CreateEntity', {
             "system_tables": this.state.system_tables,
             "entity": v,
             "parent": this.state.parent,
-            Title:title
+            Title: title,
+            TitleIcon: this.props.navigation.getParam('TitleIcon')
         })
     }
     handleAddE() {
@@ -110,13 +113,19 @@ class EntityList extends React.Component {
 
     static navigationOptions = ({ navigation }) => ({
         title: navigation.getParam('Title') + "",
+        headerStyle: {
+            backgroundColor: '#352e4a',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
         headerRight: () => (
             <View style={{
-               paddingRight:10,
+                paddingRight: 10,
                 flexDirection: 'row',
-                backgroundColor: '#fff'
             }}>
-                <Icon
+              {navigation.getParam("system_tables") && navigation.getParam("system_tables").permission && navigation.getParam("system_tables").permission.canAdd == true&&  <Icon
                     onPress={() => {
                         try {
                             navigation.getParam('handleAddE')()
@@ -125,12 +134,15 @@ class EntityList extends React.Component {
                         }
                     }}
                     style={{
-                        paddingRight:10,
+                        paddingRight: 10,
+                        color:"#fff"
                     }}
                     type="font-awesome"
                     name="plus"
-                />
-<Text>  </Text>
+                    color="#fff"
+                />}
+                <Text>  </Text>
+              
                 <Icon
                     onPress={() => {
                         try {
@@ -140,10 +152,10 @@ class EntityList extends React.Component {
                         }
                     }}
                     style={{
-                        paddingRight:10,
+                        paddingRight: 10,
                     }}
                     type="font-awesome"
-
+                    color="#fff"
                     name="refresh"
                 />
             </View>
@@ -151,30 +163,50 @@ class EntityList extends React.Component {
             <View style={{
                 flex: 1,
                 flexDirection: 'row',
-                
-                backgroundColor: '#fff'
+                paddingRight: 10,
             }}>
                 <Icon
                     onPress={() => navigation.openDrawer()}
                     style={{
-                        margin: 8,
-                        padding:4
+
+                        paddingRight: 10,
                     }}
                     type="font-awesome"
-
-                    name="bars"
+                    name="bars" 
+                    color="#fff"
                 />
-
-
+<Text>  </Text>
+                <Icon
+                    onPress={() => navigation.openDrawer()}
+                    style={{
+                        
+                        paddingLeft: 10,
+                        paddingRight: 10,
+                    }}
+                    type="font-awesome" 
+                    color="#fff"
+                    paddingLeft="10"
+                    name={navigation.getParam('TitleIcon') + ""}
+                />
             </View>
         ),
     });
 
-
-
+  
+      componentWillUnmount() {
+        // Remove the event listener
+        this.focusListener.remove();
+      }
+     
     componentDidMount() {
 
         const { navigation } = this.props
+
+        this.focusListener = navigation.addListener("didFocus", () => {
+            this.refreshData();
+          });
+        
+
         navigation.setParams({
             'handleAddE': this.handleAddE,
             'refreshData': this.refreshData
@@ -194,7 +226,7 @@ class EntityList extends React.Component {
         //this.props.fetchEntities("system_tables");
     }
     async refreshData() {
-
+        await this.setState({ isLoading: true })
         const userToken = await AsyncStorage.getItem('userToken');
 
         const { navigation } = this.props
@@ -210,6 +242,7 @@ class EntityList extends React.Component {
         var tableF = await API.FetchEntities(userToken, v.name, query);
 
         tableF = await tableF.json();
+        
         this.setState({
             entities: tableF, system_tables: tableS,
             parent: navigation.getParam("parent")
@@ -221,7 +254,7 @@ class EntityList extends React.Component {
 
             }
         });
-
+        await this.setState({ isLoading: false })
     }
     async getDependendData(col) {
 
@@ -251,6 +284,7 @@ class EntityList extends React.Component {
     }
 
     render() {
+        //const ds = new FlatList.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
 
 
         const styles = StyleSheet.create({
@@ -279,15 +313,17 @@ class EntityList extends React.Component {
             { text: 'File' },
         ];
         const { entities, system_tables } = this.state
-
+        
         return (<Container>
 
             <Content>
 
-                {entities && <List>
+                {entities && <FlatList
+                    data={entities}
 
-                    {entities.map((item, index) => {
-                        debugger
+                    renderItem={data => {
+                        
+                        const item = data.item
                         const v = item
                         var obj = { 'main': "", 'sec': undefined };
                         this.state.system_tables.columns.map((col, i) => {
@@ -319,82 +355,47 @@ class EntityList extends React.Component {
                                 }
                             }
                         });
-                        return <ListItem avatar onPress={(e) => this.openTable(item,obj['main'])} title={"edit"}>
-                            <Body  style={{ flexDirection: "row"}}>
-                                <View style={{flex:1}}><Text>{obj['main']}</Text>
-                                <Text note>{obj['sec']}</Text>
+                        return <ListItem avatar onPress={(e) => this.openTable(item, obj['main'])} title={"edit"}>
+                            <Body style={{ flexDirection: "row" }}>
+                                <View style={{ flex: 1 }}><Text>{obj['main']}</Text>
+                                    <Text note>{obj['sec']}</Text>
                                 </View>
-                                <View ><Text style={{flex:1}}></Text>
-                                     <Text note style={{bottom:0,position:"relative",right:0}}>{new Date(item.updateAt).toLocaleString()}</Text>
+                                <View ><Text style={{ flex: 1 }}></Text>
+                                    <Text note style={{ bottom: 0, position: "relative", right: 0 }}>{new Date(item.updateAt).toLocaleString()}</Text>
                                 </View>
                             </Body>
-                            <Right style={{ flexDirection: "row",alignContent:'center',alignItems:'center' }}>
+                            <Right style={{ flexDirection: "row", alignContent: 'center', alignItems: 'center' }}>
 
 
-                               
-                               
+
                                 <Icon name="chevron-right"
                                     type="font-awesome"
                                     size={10}
                                 ></Icon>
+                                 {system_tables && system_tables.childTables && system_tables.childTables.map((k, i) =>
+                                 <Button onPress={(e) => this.openList(k, v)} title={k.name}>
 
+                                 </Button>
+
+                             )}
                             </Right>
+
+                           
                         </ListItem>
                     }
-                        // <View>
-                        //     {this.state.system_tables.columns.map((col, i) => {
-                        //         const v = item
 
-                        //         if (col.type == "MultiObject" || col.type == "ObjectId") {
-                        //             return < Text> {col.displayName} : {this.GetDisplayValue(v, col)} </ Text>
-                        //         } if (col.type == "Address" && v[col.name]) {
-                        //             return < Text> {col.displayName} : {JSON.stringify(v[col.name])} </ Text>
-                        //         }
-                        //         else {
-                        //             return < Text> {col.displayName} : {v[col.name]} </ Text>
-                        //         }
+                    }
 
-                        //     })}
-                        //     <Button onPress={(e) => this.openTable(item.item)} title={"edit"}>
+                />}
 
-                        //     </Button>
-                        //     {system_tables && system_tables.childTables && system_tables.childTables.map((k, i) =>
-                        //         <Button onPress={(e) => this.openList(k, item.item)} title={k.name}>
 
-                        //         </Button>
-
-                        //     )}
-                        // </View>
-                    )}
-                </List>
-
-                    //     entities.map((v, i) =>
-                    //         <View>
-                    //             {this.state.system_tables.columns.map((col, i) => {
-                    //                 if(col.type == "MultiObject" || col.type == "ObjectId"){
-                    //                     return < Text> {col.name} : {this.GetDisplayValue(v,col)} </ Text>
-                    //                 } if(col.type == "Address" && v[col.name]){
-                    //                     return < Text> {col.name} : {JSON.stringify(v[col.name])} </ Text>
-                    //                 }
-                    //                 else{
-                    //                     return < Text> {col.name} : {v[col.name]} </ Text>
-                    //                 }
-
-                    //             })}
-                    //             <Button onPress={(e) => this.openTable(v)} title={"edit"}>
-
-                    //  </Button>
-                    //             {system_tables && system_tables.childTables && system_tables.childTables.map((k, i) =>
-                    //                 <Button onPress={(e) => this.openList(k, v)} title={k.name}>
-
-                    //                 </Button>
-
-                    //             )}
-                    //         </View>
-                    //     )
-                }
 
             </Content>
+            {this.state.isLoading && <View style={{
+                backgroundColor: "rgba(12, 12, 12, .5)",
+                position: "absolute", alignItems: "center", justifyContent: "center", flex: 1, width: Dimensions.get('window').width,
+                height: Dimensions.get('window').height
+            }}><Spinner color='blue' /></View>}
         </Container>
         );
     }

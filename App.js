@@ -7,15 +7,15 @@ import axios from 'axios';
 import { Provider } from "react-redux";
 import AppNavigator from './navigation/AppNavigator';
 import store from './store';
-import { Root } from "native-base";
 
-import { Container, Text } from 'native-base';
+import { Root,Container, Text,StyleProvider } from 'native-base';
 import * as Font from 'expo-font';
 const client = axios.create({
   baseURL: 'http://localhost:8080/',
   responseType: 'json'
 });
-
+import getTheme from './native-base-theme/components';
+import material from './native-base-theme/variables/material';
 //const store = createStore(reducer, applyMiddleware(axiosMiddleware(client)));
 
 export default function App(props) {
@@ -39,7 +39,8 @@ export default function App(props) {
 
         <Root >
           {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-          <AppNavigator  />
+         <StyleProvider style={getTheme(material)}>
+          <AppNavigator  /></StyleProvider>
         </Root></Provider>
 
     )

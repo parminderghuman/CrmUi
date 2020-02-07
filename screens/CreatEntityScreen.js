@@ -1,6 +1,6 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Picker, View, TouchableOpacity, TouchableHighlight } from 'react-native';
-import { Container, Header, Content, Form, Item, Switch, Input, Label, Button, Text, Toast, ListItem, List, Left, Body, Right,Separator } from 'native-base';
+import { ScrollView, StyleSheet, Picker, View, TouchableOpacity, TouchableHighlight, Dimensions } from 'react-native';
+import { Tab, Tabs, TabHeading, Spinner, Container, Header, Content, Form, Item, Switch, Input, Label, Button, Text, ScrollableTab, Toast, ListItem, List, Left, Body, Right, Separator } from 'native-base';
 
 import { ExpoLinksView } from '@expo/samples';
 import API from "../api/entity-save";
@@ -25,6 +25,7 @@ class CreatEntityScreen extends React.Component {
   constructor() {
     super();
     this.state = {
+      isLoading: false,
       dependencyTable: {},
       dependencyData: {},
       dependencyDataMap: {},
@@ -82,31 +83,39 @@ class CreatEntityScreen extends React.Component {
 
   static navigationOptions = ({ navigation, state, props }) => ({
     title: navigation.getParam('Title'),
+    headerStyle: {
+      backgroundColor: '#352e4a',
+    },
+    headerTintColor: '#fff',
+    headerTitleStyle: {
+      fontWeight: 'bold',
+    },
     headerRight: () => (
       <View style={{
         flex: 1,
-        flexDirection: 'row',
-        backgroundColor: '#fff'
+        flexDirection: 'row'
       }}>
 
+        {navigation.getParam("system_tables") && navigation.getParam("system_tables").permission && navigation.getParam("system_tables").permission.write == true &&
+          <Icon
+            onPress={() => {
+              try {
+                navigation.getParam('saveEntity')();
+              } catch (e) {
 
-        <Icon
-          onPress={() => {
-            try {
-              navigation.getParam('saveEntity')();
-            } catch (e) {
+              }
 
-            }
+            }}
+            style={{
+              flex: 1,
+              margin: 8,
+            }}
+            type="font-awesome"
+            color="#fff"
 
-          }}
-          style={{
-            flex: 1,
-            margin: 8,
-          }}
-          type="font-awesome"
-
-          name="check"
-        />
+            name="check"
+          />
+        }
         <Text>  </Text>
         <Icon
           onPress={() => {
@@ -123,15 +132,22 @@ class CreatEntityScreen extends React.Component {
           }}
           type="font-awesome"
           name="refresh"
+          color="#fff"
+
         />
         <Text>  </Text>
         <Icon
           onPress={() => {
             try {
+
               navigation.navigate('ChatScreen', {
-                'entity': navigation.getParam("entity"),
-                'system_tables': navigation.getParam("system_tables")
-              });
+                'chat': undefined,
+                "Title": navigation.getParam('Title'),
+                entityId: navigation.getParam("entity")._id,
+                entityClass: navigation.getParam("system_tables")._id
+
+
+              })
             } catch (e) {
               console.log(e)
             }
@@ -142,6 +158,7 @@ class CreatEntityScreen extends React.Component {
             margin: 8,
           }}
           type="font-awesome"
+          color="#fff"
 
           name="comments"
         />
@@ -151,7 +168,6 @@ class CreatEntityScreen extends React.Component {
       <View style={{
         flex: 1,
         flexDirection: 'row',
-        backgroundColor: '#fff'
       }}>
         <Icon
           onPress={() => { navigation.goBack() }}
@@ -160,15 +176,26 @@ class CreatEntityScreen extends React.Component {
             margin: 8,
           }}
           type="font-awesome"
-
+          color="#fff"
           name="arrow-left"
         />
-
+        <Text>  </Text>
+        <Icon
+          onPress={() => { navigation.goBack() }}
+          style={{
+            flex: 1,
+            margin: 8,
+          }}
+          type="font-awesome"
+          color="#fff"
+          paddingLeft="10"
+          name={navigation.getParam('TitleIcon') + ""}
+        />
       </View>
     ),
   });
   async saveEntity() {
-
+    await this.setState({ isLoading: true })
     if (this.state.parent) {
       this.state.data.parent_id = this.state.parent._id;
     }
@@ -182,7 +209,7 @@ class CreatEntityScreen extends React.Component {
     } else {
 
     }
-
+    await this.setState({ isLoading: false })
   }
   componentDidMount() {
 
@@ -192,10 +219,34 @@ class CreatEntityScreen extends React.Component {
     var system_table = navigation.getParam("system_tables");
     var entity = navigation.getParam("entity");
     var parent = navigation.getParam("parent");
+    var tabs = {};
+    var tabH = [];
+    var collape = {}
+    var tab = "Default"
+    system_table.columns.map((col, index) => {
+      if (index == 0 && col.type != "Section") {
+        tabH.push(tab)
+        tabs[tab] = []
+        collape[tab] = true
+      }
+      if (col.type == "Section") {
+        tab = col.displayName;
+        tabH.push(tab)
+        tabs[tab] = []
+        collape[tab] = true
+      }
+      if (col.type != "Section") {
+        tabs[tab].push(col)
+      }
 
+    });
     this.setState({
-      system_table: system_table, entity: entity,
-      parent: parent
+      system_table: system_table,
+      entity: entity,
+      parent: parent,
+      tabs: tabs,
+      tabH: tabH,
+      collape: collape
     })
     navigation.setParams({
       saveEntity: this.saveEntity,
@@ -206,10 +257,14 @@ class CreatEntityScreen extends React.Component {
     //this.props.fetchEntities("system_tables");
   }
   async refreshData() {
+    var user = await AsyncStorage.getItem("User");
+
+    await this.setState({ isLoading: true })
     const token = await AsyncStorage.getItem('userToken')
     const { navigation } = this.props
     var system_table = navigation.getParam("system_tables");
     var entity = navigation.getParam("entity");
+
     if (entity) {
       // this.props.fetchEntity(system_table.name, entity._id);
       var a = await API.FetchEntity(token, system_table.name, entity._id);
@@ -234,6 +289,7 @@ class CreatEntityScreen extends React.Component {
       }
     });
     this.setState({ isloaed: true })
+    await this.setState({ isLoading: false, user: JSON.parse(user) })
   }
   async getDependendData(col) {
 
@@ -246,7 +302,7 @@ class CreatEntityScreen extends React.Component {
         params['parent_id'] = this.state.parent._id
       }
       if (col.condition) {
-        debugger
+
         const con = JSON.parse(col.condition);
         for (i in con) {
           console.log(con[i])
@@ -297,7 +353,6 @@ class CreatEntityScreen extends React.Component {
     this.props.navigation.navigate('CreatEntity')
   }
   render() {
-
     const { table } = this.state;
     const styles = StyleSheet.create({
       container: {
@@ -326,6 +381,8 @@ class CreatEntityScreen extends React.Component {
       { text: 'File' },
     ];
     const { system_table } = this.state;
+    const columnPermissions = system_table.columnPermissions;
+
     var { data } = this.state;
     if (system_table) {
 
@@ -336,9 +393,43 @@ class CreatEntityScreen extends React.Component {
           {() => (
             <Container style={styles.container}>
               <Content>
-                <List>
+                {this.state.user && this.state.user.userType == "SuperAdmin" && data['userType'] != "SuperAdmin" && <Item >
+                  <Body style={{ flexDirection: "row", paddingTop: 10, paddingBottom: 10 }}><Text>is Super Admin</Text>
+
+                    <Switch style={{ position: "absolute", right: 0 }}
+                      text={'value.displayName'}
+                      value={data['userType'] == 'CompanyAdmin'}
+                      onValueChange={(e) => {
+                        if (e) {
+                          data['userType'] = 'CompanyAdmin';
+                        } else {
+                          data['userType'] = null;
+                        }
+                        this.setState({ data: data })
+                      }} />
+
+                  </Body>
+                </Item>
+                }
+                {this.state.tabH.map((tab, ti) => <View>
+                  <Header style={{ alignItems: "center", justifyContent: "center", marginBottom: 20 }} >
+                    <Label style={{ color: "white", fontSize: 20, flex: 1 }} >{tab}</Label>
+                    <Icon style={{ position: "absolute", left: 0 }}
+                      color="white" type="font-awesome"
+                      name={this.state.collape[tab] == false ? "plus-circle" : "minus-circle"}
+                      onPress={() => {
+                        this.state.collape[tab] = !this.state.collape[tab];
+                        this.setState({ collape: this.state.collape });
+                      }}
+                    ></Icon></Header>
+
+
+
                   {
-                    rows.columns.map((value, index) => {
+                    this.state.collape[tab] == true && this.state.tabs[tab].map((value, index) => {
+                      if (columnPermissions[value.name].read != true && columnPermissions[value.name].write != true) {
+                        return <View></View>
+                      }
                       if (data[value.name] && value.type != "Boolean" && value.type != "Address") {
                         data[value.name] = data[value.name] + "";
                       }
@@ -348,16 +439,17 @@ class CreatEntityScreen extends React.Component {
                       }
                       if (value.type == "Boolean") {
                         return <Item >
-                          <Body style={{flexDirection:"row",paddingTop:10,paddingBottom:10}}><Text>{value.displayName}</Text>
-                          
-                            <Switch style={{position:"absolute",right:0}}
+                          <Body style={{ flexDirection: "row", paddingTop: 10, paddingBottom: 10 }}><Text>{value.displayName}</Text>
+
+                            <Switch style={{ position: "absolute", right: 0 }}
                               text={value.displayName}
                               value={data[value.name]}
+                              disabled={columnPermissions[value.name].write != true}
                               onValueChange={(e) => {
 
                                 data[value.name] = e; this.setState({ data: data })
                               }} />
-                          
+
                           </Body>
                         </Item>
                       } else if (value.type == "Integer") {
@@ -369,6 +461,7 @@ class CreatEntityScreen extends React.Component {
                             disabled={false}
                             label={value.displayName}
                             value={data[value.name]}
+                            disabled={columnPermissions[value.name].write != true}
                             onChangeText={(e) => {
 
                               if (e == "") {
@@ -390,7 +483,7 @@ class CreatEntityScreen extends React.Component {
                           <Label>{value.displayName}</Label>
                           <Input
                             keyboardType={'decimal-pad'}
-
+                            disabled={columnPermissions[value.name].write != true}
                             style={styles.input}
                             disabled={false}
                             label={value.displayName}
@@ -416,7 +509,7 @@ class CreatEntityScreen extends React.Component {
                           <Label>{value.displayName}</Label>
                           <Input
                             keyboardType={'numeric'}
-
+                            disabled={columnPermissions[value.name].write != true}
                             style={styles.input}
                             disabled={false}
                             label={value.displayName}
@@ -444,7 +537,7 @@ class CreatEntityScreen extends React.Component {
                           <Input
                             keyboardType={'default'}
                             style={styles.input}
-                            disabled={false}
+                            disabled={columnPermissions[value.name].write != true}
                             label={value.displayName}
                             value={data[value.name]}
                             onChangeText={(e) => {
@@ -461,7 +554,7 @@ class CreatEntityScreen extends React.Component {
                             secureTextEntry
                             keyboardType={'default'}
                             style={styles.input}
-                            disabled={false}
+                            disabled={columnPermissions[value.name].write != true}
                             type="password"
                             label={value.displayName}
                             value={data[value.name]}
@@ -471,16 +564,21 @@ class CreatEntityScreen extends React.Component {
 
                       }
                       else if (value.type == "Select") {
-                        return <View style={styles.border}>
-                          <View style={{ flexDirection: 'row' }}>
-                            <Text>{value.displayName} : </Text>
-                            <Text onPress={() => {
-                              this.setState({
-                                customPicker: index
-                              })
-                            }}>{data[value.name]}</Text>
-                          </View>
-                          {this.state.customPicker == index && this.state.isloaed && <CustomPicker
+                        return <Item><View style={styles.border}  >
+                          <TouchableHighlight style={{ flex: 1 }} onPress={() => {
+                            if (columnPermissions[value.name].write != true) {
+                              return;
+                            }
+                            this.setState({
+                              customPicker: (ti*10+index)
+                            })
+                          }}>
+                            <View style={{ flexDirection: 'row' }}>
+                              <Text>{value.displayName} : </Text>
+                              <Text >{data[value.name]}</Text>
+                            </View>
+                          </TouchableHighlight>
+                          {this.state.customPicker ==  (ti*10+index) && this.state.isloaed && <CustomPicker
                             options={value.options}
 
                             selectedValue={data[value.name]}
@@ -514,19 +612,24 @@ class CreatEntityScreen extends React.Component {
                             }}
                           >
                           </CustomPicker>}
-                        </View>
+                        </View></Item>
                       }
                       else if (value.type == "MultiObject") {
-                        return <View style={styles.border}>
+                        return <Item><View style={styles.border}>
                           <TouchableHighlight onPress={() => {
+                            if (columnPermissions[value.name].write != true) {
+                              return;
+                            }
                             this.setState({
-                              customPicker: index
+                              customPicker:  (ti*10+index)
                             })
-                          }}><View style={{ flexDirection: 'row' }} >
+                          }}>
+                            <View style={{ flexDirection: 'row' }} >
                               <Text>{value.displayName} : </Text>
-                              <Text >{this.GetDisplayValue(data, value)}</Text></View>
+                              <Text >{this.GetDisplayValue(data, value)}</Text>
+                            </View>
                           </TouchableHighlight>
-                          {this.state.customPicker == index && this.state.dependencyData[value.targetClass] && <CustomPicker
+                          {this.state.customPicker ==  (ti*10+index) && this.state.dependencyData[value.targetClass] && <CustomPicker
                             options={this.state.dependencyData[value.targetClass]}
 
                             selectedValue={data[value.name]}
@@ -561,18 +664,24 @@ class CreatEntityScreen extends React.Component {
                           >
                           </CustomPicker>
                           }
-                        </View>
+                        </View></Item>
                       } else if (value.type == "MultiSelect") {
-                        return <View style={styles.border}>
-                          <View style={{ flexDirection: 'row' }}>
-                            <Text>{value.displayName} : </Text>
-                            <Text onPress={() => {
-                              this.setState({
-                                customPicker: index
-                              })
-                            }}>{data[value.name]}</Text>
-                          </View>
-                          {this.state.isloaed && this.state.customPicker == index && <CustomPicker
+                        return <Item><View style={styles.border}   >
+                          <TouchableHighlight onPress={() => {
+                            if (columnPermissions[value.name].write != true) {
+                              return;
+                            }
+
+                            this.setState({
+                              customPicker:  (ti*10+index)
+                            })
+                          }}>
+                            <View style={{ flexDirection: 'row' }}>
+                              <Text>{value.displayName} : </Text>
+                              <Text>{data[value.name]}</Text>
+                            </View>
+                          </TouchableHighlight>
+                          {this.state.isloaed && this.state.customPicker ==  (ti*10+index) && <CustomPicker
                             options={value.options}
 
                             selectedValue={data[value.name]}
@@ -606,19 +715,25 @@ class CreatEntityScreen extends React.Component {
                               })
                             }}>
                           </CustomPicker>}
-                        </View>
+                        </View></Item>
                       }
                       else if (value.type == "ObjectId") {
-                        return <View style={styles.border}>
-                          <View style={{ flexDirection: 'row' }}>
-                            <Text>{value.displayName} : </Text>
-                            <Text onPress={() => {
-                              this.setState({
-                                customPicker: index
-                              })
-                            }}>{this.GetDisplayValue(data, value)}</Text>
-                          </View>
-                          {this.state.customPicker == index && this.state.dependencyData[value.targetClass] && <CustomPicker
+                        return <Item style={{ padding: 15 }} >
+                          <TouchableHighlight onPress={() => {
+                            if (columnPermissions[value.name].write != true) {
+                              return;
+                            }
+
+                            this.setState({
+                              customPicker:  (ti*10+index)
+                            })
+                          }} >
+                            <View style={{ flexDirection: 'row' }}>
+                              <Text>{value.displayName} : </Text>
+                              <Text >{this.GetDisplayValue(data, value)}</Text>
+                            </View>
+                          </TouchableHighlight>
+                          {this.state.customPicker ==  (ti*10+index) && this.state.dependencyData[value.targetClass] && <CustomPicker
                             options={this.state.dependencyData[value.targetClass]}
 
                             selectedValue={data[value.name]}
@@ -653,7 +768,7 @@ class CreatEntityScreen extends React.Component {
                           >
                           </CustomPicker>}
 
-                        </View>
+                        </Item>
                       } else if (value.type == "Date") {
                         return <Item style={{ flexDirection: "row" }}>
                           <View style={{ flexDirection: "column" }}>
@@ -661,13 +776,14 @@ class CreatEntityScreen extends React.Component {
 
                             <Text>{data[value.name] ? new Date(data[value.name]).toLocaleString() : ""}</Text>
                           </View>
-                          <View style={{ position: "absolute", right: 0, flexDirection: "row" }}>
+                          {columnPermissions[value.name].write != true && <View style={{ position: "absolute", right: 0, flexDirection: "row" }}>
                             <Icon
                               type="font-awesome"
                               name="calendar"
                               onPress={(e) => {
+
                                 this.setState({
-                                  showDateTimePicker: index,
+                                  showDateTimePicker:  (ti*10+index),
                                   mode: 'date'
                                 }
                                 )
@@ -678,17 +794,17 @@ class CreatEntityScreen extends React.Component {
                               name="clock"
                               onPress={(e) => {
                                 this.setState({
-                                  showDateTimePicker: index,
+                                  showDateTimePicker:  (ti*10+index),
                                   mode: 'time'
                                 }
                                 )
                               }} />
                           </View>
+                          }
 
 
 
-
-                          {this.state.showDateTimePicker && this.state.showDateTimePicker == index &&
+                          {this.state.showDateTimePicker && this.state.showDateTimePicker ==  (ti*10+index) &&
                             <DateTimePicker value={data[value.name] ? new Date(data[value.name]) : new Date()}
                               mode={this.state.mode}
                               is24Hour={true}
@@ -710,9 +826,9 @@ class CreatEntityScreen extends React.Component {
                             <Label>{'Line 1'}</Label>
                             <Input
                               keyboardType={'default'}
-
+                              
                               style={styles.input}
-                              disabled={false}
+                              disabled={columnPermissions[value.name].write != true}
                               type="text"
                               label={'Line 1'}
                               value={data[value.name]['Line1']}
@@ -725,7 +841,7 @@ class CreatEntityScreen extends React.Component {
                             <Input
                               keyboardType={'default'}
                               style={styles.input}
-                              disabled={false}
+                              disabled={columnPermissions[value.name].write != true}
                               type="text"
                               label={'Line 2'}
                               value={data[value.name]['Line2']}
@@ -739,7 +855,7 @@ class CreatEntityScreen extends React.Component {
 
                               keyboardType={'default'}
                               style={styles.input}
-                              disabled={false}
+                              disabled={columnPermissions[value.name].write != true}
                               type="text"
                               label={'City'}
                               value={data[value.name]['City']}
@@ -753,7 +869,7 @@ class CreatEntityScreen extends React.Component {
 
                               keyboardType={'default'}
                               style={styles.input}
-                              disabled={false}
+                              disabled={columnPermissions[value.name].write != true}
                               type="text"
                               label={'State'}
                               value={data[value.name]['State']}
@@ -766,7 +882,7 @@ class CreatEntityScreen extends React.Component {
 
                               keyboardType={'default'}
                               style={styles.input}
-                              disabled={false}
+                              disabled={columnPermissions[value.name].write != true}
                               type="text"
                               label={'Country'}
                               value={data[value.name]['Country']}
@@ -817,7 +933,7 @@ class CreatEntityScreen extends React.Component {
 
                             keyboardType={'default'}
                             style={styles.input}
-                            disabled={false}
+                            disabled={columnPermissions[value.name].write != true}
                             type="text"
                             label={'Zip Code'}
                             value={data[value.name]['ZipCode']}
@@ -829,7 +945,7 @@ class CreatEntityScreen extends React.Component {
 
                               keyboardType={'default'}
                               style={styles.input}
-                              disabled={false}
+                              disabled={columnPermissions[value.name].write != true} 
                               type="text"
                               label={'Zip Code'}
                               value={data[value.name]['ZipCode']}
@@ -842,15 +958,28 @@ class CreatEntityScreen extends React.Component {
                             <Text></Text>
                           </Separator>
                         </View>
-                      } else {
+                      } else if (value.type == "Section") {
+                        return <Separator bordered>
+                          <Text>{value.displayName}</Text>
+                        </Separator>
+                      }
+                      else {
                         return <View>
                           <Text>{value.displayName}</Text>
                         </View>
                       }
                     })
                   }
-                </List>
+
+                </View>)}
+
               </Content>
+              {this.state.isLoading && <View style={{
+                backgroundColor: "rgba(12, 12, 12, .5)",
+                position: "absolute", alignItems: "center", justifyContent: "center", flex: 1, width: Dimensions.get('window').width,
+                height: Dimensions.get('window').height
+              }}><Spinner color='blue' /></View>}
+
             </Container>
           )}
         </KeyboardShift>
