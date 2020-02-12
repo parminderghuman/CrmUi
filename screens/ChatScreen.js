@@ -169,15 +169,16 @@ export default class ChatScreen extends React.Component {
             var resp = await resp.json();
         }
         var messages = [];
+        debugger
         for (var i in resp) {
             if (resp[i].message) {
 
-                resp[i].user.name = resp[i].user.username
+                resp[i].user.name = resp[i].user.Name
                 resp[i].message.user = resp[i].user
                 messages.push(resp[i].message)
 
             } else {
-                resp[i].user.name = resp[i].user.username
+                resp[i].user.name = resp[i].user.Name
                 resp[i].user = resp[i].user
                 messages.push(resp[i])
             }
@@ -213,7 +214,7 @@ export default class ChatScreen extends React.Component {
                     <GiftedChat
                         messages={this.state.messages}
                         onSend={messages => this.onSend(messages)}
-                        user={this.state.user}
+                        user={this.state.user.activeCompany}
                     />
                 )}
             </KeyboardShift>

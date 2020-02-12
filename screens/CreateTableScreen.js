@@ -355,7 +355,7 @@ class CreateTableScreen extends React.Component {
                     this.state.ViewColumnsIndex[index] = true;
                   }
                   return <ListItem key={index} style={{ flexDirection: 'column' }}>
-                    <View itemDivider style={{ padding: 10, width: "100%", backgroundColor:table.columns[index].type =="Section"?"blue": "grey", margin: 10, flexDirection: "row" }} >
+                    <View itemDivider style={{ padding: 10, width: "100%", backgroundColor: table.columns[index].type == "Section" ? "blue" : "grey", margin: 10, flexDirection: "row" }} >
 
                       <Label>{index + " " + name.displayName}</Label>
                       {index != 0 && <Icon
@@ -363,37 +363,37 @@ class CreateTableScreen extends React.Component {
                         name='arrow-up'
                         style={{ position: "absolute", right: 0 }}
                         onPress={() => {
-                          
-                          if(typeof(this.state.index) != "undefined" && this.state.index !=null && this.state.index !="" && this.state.index != index){
-                            if(this.state.index < 0){
+
+                          if (typeof (this.state.index) != "undefined" && this.state.index != null && this.state.index != "" && this.state.index != index) {
+                            if (this.state.index < 0) {
                               this.state.index = 0
-                            }else if( this.state.index >= table.columns.length  ){
-                              this.state.index= table.columns.length -1;
+                            } else if (this.state.index >= table.columns.length) {
+                              this.state.index = table.columns.length - 1;
                             }
-                           
-                            if(index < this.state.index){
+
+                            if (index < this.state.index) {
                               //3 ,5
-                                var b = table.columns[index];//3 
-                                for(var i = index ;i< this.state.index; i++){
-                                  table.columns[i] = table.columns[i+1]
-                                }
-                                table.columns[this.state.index] = b;
-                              
-                              }else{
-                                //5,3
-                                var b = table.columns[index];//5
-                                for(var i = index ;i> this.state.index; i--){
-                                  table.columns[i] = table.columns[i-1]
-                                }
-                                table.columns[this.state.index] = b;
+                              var b = table.columns[index];//3 
+                              for (var i = index; i < this.state.index; i++) {
+                                table.columns[i] = table.columns[i + 1]
                               }
-                               this.setState({ table: table,index:undefined });
-                          }else{
-                          var a = table.columns[index - 1];
-                          table.columns[index - 1] = table.columns[index]
-                          table.columns[index] = a;
-                          this.setState({ table: table });
-                          } 
+                              table.columns[this.state.index] = b;
+
+                            } else {
+                              //5,3
+                              var b = table.columns[index];//5
+                              for (var i = index; i > this.state.index; i--) {
+                                table.columns[i] = table.columns[i - 1]
+                              }
+                              table.columns[this.state.index] = b;
+                            }
+                            this.setState({ table: table, index: undefined });
+                          } else {
+                            var a = table.columns[index - 1];
+                            table.columns[index - 1] = table.columns[index]
+                            table.columns[index] = a;
+                            this.setState({ table: table });
+                          }
                         }}
                       ></Icon>}
                       {table.columns.length - 1 != index && <Icon
@@ -401,15 +401,15 @@ class CreateTableScreen extends React.Component {
                         name='arrow-down'
                         style={{ position: "absolute", right: 0 }}
                         onPress={() => {
-                          if(typeof(this.state.index) != "undefined" && this.state.index !=null && this.state.index !="" && this.state.index != index){
+                          if (typeof (this.state.index) != "undefined" && this.state.index != null && this.state.index != "" && this.state.index != index) {
 
-                          }else{
+                          } else {
                             var a = table.columns[index + 1];
-                          table.columns[index + 1] = table.columns[index]
-                          table.columns[index] = a;
-                          this.setState({ table: table });
+                            table.columns[index + 1] = table.columns[index]
+                            table.columns[index] = a;
+                            this.setState({ table: table });
                           }
-                         
+
 
                         }}
                       ></Icon>}
@@ -426,15 +426,15 @@ class CreateTableScreen extends React.Component {
                         }}
                       ></Icon>
                       <Input
-                          style={{width:5,height:20,backgroundColor:"#fff",flex:.2}}
-                          disabled={false}
-                          label='Name '
-                          id={index+"asdsada"}
-                          value={this.state.index}
-                          keyboardType={'numeric'}
-                          
-                          onChangeText={(e) => {  this.setState({ index: e }); }}
-                        />
+                        style={{ width: 5, height: 20, backgroundColor: "#fff", flex: .2 }}
+                        disabled={false}
+                        label='Name '
+                        id={index + "asdsada"}
+                        value={this.state.index}
+                        keyboardType={'numeric'}
+
+                        onChangeText={(e) => { this.setState({ index: e }); }}
+                      />
                     </View>
                     {!this.state.ViewColumnsIndex[index] && <View style={{ alignSelf: 'stretch', flex: 1 }}>
 
@@ -500,6 +500,7 @@ class CreateTableScreen extends React.Component {
                           <Picker.Item label="MultiObject" value="MultiObject" />
                           <Picker.Item label="Address" value="Address" />
                           <Picker.Item label="Section" value="Section" />
+                          <Picker.Item label="Link" value="Link" />
                         </Picker>
                       </Item>
 
@@ -541,7 +542,27 @@ class CreateTableScreen extends React.Component {
                       </Item>}
 
 
+                      {name.type && (name.type == 'Link' ) && this.state.systemEntities &&
 
+                        <Item>
+                          <Text>Link Class</Text>
+                          <Picker
+                            label='Link Class'
+                             selectedValue={table.columns[index].targetClass}
+                            style={styles.input}
+                            
+                            onValueChange={(itemValue, itemIndex) => {
+                              table.columns[index].targetClass = itemValue; this.setState({ table: table })
+                            }
+                            }>
+                            <Picker.Item label={'None'} />
+                            {
+                              this.state.systemEntities && this.state.systemEntities.map((role, i) =>
+                                <Picker.Item label={role.name} value={role._id} />
+                              )}
+                          </Picker>
+                        </Item>
+                      }
 
 
                       {name.type && (name.type == 'ObjectId' || name.type == 'MultiObject') && this.state.systemEntities &&

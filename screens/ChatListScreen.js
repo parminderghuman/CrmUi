@@ -1,6 +1,6 @@
 import { GiftedChat } from 'react-native-gifted-chat'
 import React from 'react';
-import { ScrollView, StyleSheet, Picker, View, TouchableOpacity, TouchableHighlight, Modal, AsyncStorage } from 'react-native';
+import { ScrollView, StyleSheet, Picker, View, TouchableOpacity, TouchableHighlight, Modal, AsyncStorage, FlatList } from 'react-native';
 import { Container, Thumbnail, Header, Content, Form, Item, Switch, Input, Label, Button, Text, Toast, ListItem, List, Left, Body, Right, Separator } from 'native-base';
 import { Avatar } from 'react-native-elements';
 
@@ -37,7 +37,8 @@ export default class ChatListScreen extends React.Component {
         user: {},
         fetchingUsersLoading: false,
         customPicker: false,
-        sUser: undefined
+        sUser: undefined,
+        isLoading: false
     };
     async navigateToChatScreen(chat, username, icon) {
         const { navigation } = this.props
@@ -66,7 +67,7 @@ export default class ChatListScreen extends React.Component {
             }
         }
         const { navigation } = this.props
-        this.navigateToChatScreen(resp, targetUser.username)
+        this.navigateToChatScreen(resp, targetUser.Name)
 
     }
 
@@ -178,21 +179,48 @@ export default class ChatListScreen extends React.Component {
             </View>
         ),
     });
-    async fetchData() {
+    async fetchData(i = 0) {
+        debugger
         const { navigation } = this.props
         var system_table = navigation.getParam("system_tables");
         var user = await AsyncStorage.getItem("User");
 
         var entity = navigation.getParam("entity");
         const token = await AsyncStorage.getItem('userToken')
+        var query = {};
+        try {
 
-        var resp = await ChatApi.FetchChatList(token, {});
+
+            if (i == -1) {
+                var a = new Date(this.state.messages[this.state.messages.length - 1].updatedAt);
+                query['updatedAt'] = { '$lt': a.getTime() }
+            } if (i == 1) {
+                var a = new Date(this.state.messages[0].updatedAt);
+                query['updatedAt'] = { '$gt': a.getTime() }
+            }
+        } catch (error) {
+            i = 0
+        }
+
+        query = encodeURI(JSON.stringify(query))
+        var sort = { 'updatedAt': 'desc' };
+        sort = encodeURI(JSON.stringify(sort));
+        var parama = { "query": query, "sort": sort }
+        var resp = await ChatApi.FetchChatList(token, parama);
 
         var resp = await resp.json();
+        if (i == -1) {
+            this.state.messages = resp.concat(this.state.messages);
 
-        var messages = [];
+        } else if (i == 1) {
+            this.state.messages = this.state.messages.concat(resp);
+
+        } else {
+            this.state.messages = resp
+        }
+
         this.setState({
-            messages: resp,
+            messages: this.state.messages,
             user: JSON.parse(user)
         });
 
@@ -215,10 +243,18 @@ export default class ChatListScreen extends React.Component {
 
         const parent = navigation.getParam("parent");
 
+        var query = {};
+
         if (parent) {
-            params['parent_id'] = parent._id;
+            query = { "parent_id": { "$oid": parent._id } };
         }
-        var resp = await Api.FetchEntities(token, "users", params);
+
+
+        query = encodeURI(JSON.stringify(query))
+        var sort = { 'updateAt': 'desc' };
+        sort = encodeURI(JSON.stringify(sort));
+        var parama = { "query": query, "sort": sort }
+        var resp = await Api.FetchEntities(token, "User", params);
         var resp = await resp.json();
 
         this.setState({
@@ -234,30 +270,44 @@ export default class ChatListScreen extends React.Component {
 
                     <Container>
 
-                        <List>
-                            {this.state.messages && this.state.messages.map((message, i) =>
-                                <ListItem avatar onPress={() => {
+                        <FlatList
 
-                                    this.navigateToChatScreen(message.chat, message.user ? message.user.username : message.chat.name, message.entity ? message.entity.icon : undefined)
+                            data={this.state.messages}
+                            onRefresh={() => {
+                                this.fetchData(-1);
+                            }}
+                            onEndReached={(info) => {
+                                debugger
+                                this.fetchData(1);
+                            }}
+                            onEndReachedThreshold={0.5}
+                            refreshing={this.state.isLoading}
+                            renderItem={data => {
+                                var message = data.item;
+                                return <ListItem avatar onPress={() => {
+
+                                    this.navigateToChatScreen(message.chat, message.user ? message.user.Name : message.chat.name, message.entity ? message.entity.icon : undefined)
 
                                 }}>
                                     <Left>
                                         {
 
                                             message.chat.type == "Entity" ? <Icon type="font-awesome" name={message.entity.icon} />
-                                                : <Avatar source={{ uri: 'Image URL' }} rounded title={message.user && message.user.username ? message.user.username[0] : message.chat.name[0]} />
+                                                : <Avatar source={{ uri: 'Image URL' }} rounded title={message.user && message.user.Name ? message.user.Name[0] : message.chat.name[0]} />
                                         }
                                     </Left>
                                     <Body>
-                                        <Text>{message.user ? message.user.username : message.chat.name}</Text>
+                                        <Text>{message.user ? message.user.Name : message.chat.name}</Text>
                                         <Text note>{message.message ? message.message.text : ""}</Text>
                                     </Body>
                                     <Right>
                                         <Text note>{new Date(message.lastMessageTime).toLocaleString()}</Text>
                                     </Right>
                                 </ListItem>
-                            )}
-                        </List>
+                            }}
+                        >
+
+                        </FlatList>
 
                         {this.state.customPicker && this.state.users &&
 
@@ -265,7 +315,7 @@ export default class ChatListScreen extends React.Component {
                                 options={this.state.users}
 
                                 selectedValue={this.state.sUser}
-                                display={"username"}
+                                display={"Name"}
                                 search={true} // should show search bar?
                                 multiple={false} //
                                 selected={this.state.sUser}

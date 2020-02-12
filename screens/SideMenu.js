@@ -7,6 +7,7 @@ import * as Api from '../api/entity-save';
 import { Container, Header, Content, Form, Item, Input, Label, Button, Toast, ListItem, List, Left, Body, Right, Spinner } from 'native-base';
 import { Icon } from 'react-native-elements'
 import { isLoading } from 'expo-font';
+import MapView from 'react-native-maps';
 
 class SideMenu extends Component {
 
@@ -21,7 +22,7 @@ class SideMenu extends Component {
       password: "",
       oldPassword: "",
       rePassword: "",
-      error: false, isLoading: false
+      error: false, isLoading: false, showMap: false
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -44,6 +45,7 @@ class SideMenu extends Component {
     var parent = undefined;
     var parentClass = undefined
     user = JSON.parse(user)
+    debugger
     if (user.userType != "SuperAdmin") {
       parentClass = JSON.parse(list)[0];
 
@@ -52,10 +54,10 @@ class SideMenu extends Component {
       const userToken = await AsyncStorage.getItem('userToken');
 
 
-      var query = { "_id": user.parent_id };
+      var query = { "_id": { "$oid": user.activeCompany.parent_id } };
+      var parama = { "query": encodeURI(JSON.stringify(query)) }
 
-
-      var tableF = await Api.FetchEntities(userToken, parentClass.name, query);
+      var tableF = await Api.FetchEntities(userToken, parentClass.name, parama);
       tableF = await tableF.json();
       parent = tableF[0];
 
@@ -63,15 +65,15 @@ class SideMenu extends Component {
       list = JSON.parse(list)
     }
 
- 
-    
+
+
 
     this.setState({
       list: list,
       user: user, parent: parent
     })
     if (list && list.length > 0) {
-        
+
       this.props.navigation.navigate('Home', {
         'system_tables': list[0], parent: parent,
         "Title": list[0].displayName ? list[0].displayName : list[0].name,
@@ -157,15 +159,15 @@ class SideMenu extends Component {
                   <Text onPress={(e) => {
                     // this.props.navigation.pop(1);
 
-                  
-                      this.props.navigation.navigate('Home', {
-                        'system_tables': l,
-                        'parent': parent,
-                        "Title": l.displayName ? l.displayName : l.name,
-                        "TitleIcon": l.icon
-                      })
-                      //this.props.navigation.setParams({ "Title": l.name })
-                    
+
+                    this.props.navigation.navigate('Home', {
+                      'system_tables': l,
+                      'parent': parent,
+                      "Title": l.displayName ? l.displayName : l.name,
+                      "TitleIcon": l.icon
+                    })
+                    //this.props.navigation.setParams({ "Title": l.name })
+
                     this.props.navigation.closeDrawer()
                   }
 
@@ -210,7 +212,7 @@ class SideMenu extends Component {
             </ListItem>
 
 
-            {(this.state.user.userType == "CompanyAdmin" || this.state.user.userType == "SuperAdmin") && <ListItem avatar>
+            {((this.state.user.activeCompany && this.state.user.activeCompany.userType == "CompanyAdmin") || this.state.user.userType == "SuperAdmin") && <ListItem avatar>
               <Left>
                 <Icon name={'cog'}
                   type="font-awesome"
@@ -220,12 +222,12 @@ class SideMenu extends Component {
                 <Text onPress={(e) => {
                   this.props.navigation.closeDrawer();
                   this.props.navigation.navigate('TableListAdmin'
-                  ,{
-                    //'system_tables': l,
-                    'parent': parent,
-                    "Title": 'Permissions',
-                    "TitleIcon": 'cog'
-                  });
+                    , {
+                      //'system_tables': l,
+                      'parent': parent,
+                      "Title": 'Permissions',
+                      "TitleIcon": 'cog'
+                    });
 
                 }} >
                   Permissions
@@ -252,6 +254,28 @@ class SideMenu extends Component {
 
                 }} >
                   Reset Password
+                  </Text>
+              </Body>
+              <Right>
+                <Icon name="chevron-right"
+                  type="font-awesome"
+                  size={10}
+                ></Icon>
+              </Right>
+            </ListItem>
+            <ListItem avatar>
+              <Left>
+                <Icon name={'map-marker'}
+                  type="font-awesome"
+                ></Icon>
+              </Left>
+              <Body>
+                <Text onPress={(e) => {
+                  // this.props.navigation.pop(1);
+                  this.setState({ showMap: true })
+
+                }} >
+                  Location
                   </Text>
               </Body>
               <Right>
@@ -378,6 +402,41 @@ class SideMenu extends Component {
 
         </Modal>
 
+        <Modal
+          animationType="slide"
+          transparent={true}
+          style={{ backgroundColor: "red" }}
+          backgroundColor={"grey"}
+          visible={this.state.showMap}
+          onRequestClose={() => {
+            //Alert.alert('Modal has been closed.');
+          }}>
+
+          <View style={{ backgroundColor: "rgba(12, 12, 12, .5)", alignItems: "center", justifyContent: "center", flex: 1 }}>
+
+            <MapView style={{ backgroundColor:"red"}}
+              initialRegion={{
+                latitude: 37.78825,
+                longitude: -122.4324,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              }}
+            />
+            <Button block style={{ padding: 10, color: "white" }} onPress={() => {
+              this.setState({
+                showMap: false,
+              });
+            }} >
+              <Text style={{ color: "white" }}>Ok</Text>
+            </Button>
+          </View>
+          {this.state.isLoading && <View style={{
+            backgroundColor: "rgba(12, 12, 12, .5)",
+            position: "absolute", alignItems: "center", justifyContent: "center", flex: 1, width: Dimensions.get('window').width,
+            height: Dimensions.get('window').height
+          }}><Spinner color='blue' /></View>}
+
+        </Modal>
 
       </Container>
     );

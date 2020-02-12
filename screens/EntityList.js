@@ -48,7 +48,7 @@ class EntityList extends React.Component {
 
     openTable(v, title) {
         var s = this.state
-        
+
         this.props.navigation.navigate('CreateEntity', {
             "system_tables": this.state.system_tables,
             "entity": v,
@@ -62,7 +62,9 @@ class EntityList extends React.Component {
         this.props.navigation.navigate('CreateEntity', {
             "system_tables": this.state.system_tables,
             "entity": undefined,
-            "parent": this.state.parent
+            "parent": this.state.parent,
+            Title: "Add "+this.props.navigation.getParam('Title'),
+            TitleIcon: this.props.navigation.getParam('TitleIcon')
         })
     }
     openList(v, t) {
@@ -115,17 +117,17 @@ class EntityList extends React.Component {
         title: navigation.getParam('Title') + "",
         headerStyle: {
             backgroundColor: '#352e4a',
-          },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
             fontWeight: 'bold',
-          },
+        },
         headerRight: () => (
             <View style={{
                 paddingRight: 10,
                 flexDirection: 'row',
             }}>
-              {navigation.getParam("system_tables") && navigation.getParam("system_tables").permission && navigation.getParam("system_tables").permission.canAdd == true&&  <Icon
+                {navigation.getParam("system_tables") && navigation.getParam("system_tables").permission && navigation.getParam("system_tables").permission.canAdd == true && <Icon
                     onPress={() => {
                         try {
                             navigation.getParam('handleAddE')()
@@ -135,14 +137,14 @@ class EntityList extends React.Component {
                     }}
                     style={{
                         paddingRight: 10,
-                        color:"#fff"
+                        color: "#fff"
                     }}
                     type="font-awesome"
                     name="plus"
                     color="#fff"
                 />}
                 <Text>  </Text>
-              
+
                 <Icon
                     onPress={() => {
                         try {
@@ -172,18 +174,18 @@ class EntityList extends React.Component {
                         paddingRight: 10,
                     }}
                     type="font-awesome"
-                    name="bars" 
+                    name="bars"
                     color="#fff"
                 />
-<Text>  </Text>
+                <Text>  </Text>
                 <Icon
                     onPress={() => navigation.openDrawer()}
                     style={{
-                        
+
                         paddingLeft: 10,
                         paddingRight: 10,
                     }}
-                    type="font-awesome" 
+                    type="font-awesome"
                     color="#fff"
                     paddingLeft="10"
                     name={navigation.getParam('TitleIcon') + ""}
@@ -192,20 +194,20 @@ class EntityList extends React.Component {
         ),
     });
 
-  
-      componentWillUnmount() {
+
+    componentWillUnmount() {
         // Remove the event listener
         this.focusListener.remove();
-      }
-     
+    }
+
     componentDidMount() {
 
         const { navigation } = this.props
 
         this.focusListener = navigation.addListener("didFocus", () => {
             this.refreshData();
-          });
-        
+        });
+
 
         navigation.setParams({
             'handleAddE': this.handleAddE,
@@ -225,7 +227,7 @@ class EntityList extends React.Component {
 
         //this.props.fetchEntities("system_tables");
     }
-    async refreshData() {
+    async refreshData(i = 0) {
         await this.setState({ isLoading: true })
         const userToken = await AsyncStorage.getItem('userToken');
 
@@ -235,16 +237,43 @@ class EntityList extends React.Component {
         var tableS = await API.FetchEntity(userToken, "system_tables", v._id);
         tableS = await tableS.json();
         var query = {};
-        if (parent) {
-            query['parent_id'] = parent._id;
-        }
 
-        var tableF = await API.FetchEntities(userToken, v.name, query);
+        if (parent) {
+            query = { "parent_id": { "$oid": parent._id } };
+        }
+        debugger
+        try {
+
+
+            if (i == -1) {
+                var a = new Date(this.state.entities[0].updateAt);
+                query['updateAt'] = { '$gt': a.getTime() }
+            } if (i == 1) {
+                var a = new Date(this.state.entities[this.state.entities.length - 1].updateAt);
+                query['updateAt'] = { '$lt': a.getTime() }
+            }
+        } catch (error) {
+            i = 0
+        }
+        query = encodeURI(JSON.stringify(query))
+        var sort = { 'updateAt': 'desc' };
+        sort = encodeURI(JSON.stringify(sort));
+        var parama = { "query": query, "sort": sort }
+        var tableF = await API.FetchEntities(userToken, v.name, parama);
 
         tableF = await tableF.json();
-        
+
+        if (i == -1) {
+            this.state.entities = tableF.concat(this.state.entities);
+
+        } else if (i == 1) {
+            this.state.entities = this.state.entities.concat(tableF);
+
+        } else {
+            this.state.entities = tableF
+        }
         this.setState({
-            entities: tableF, system_tables: tableS,
+            entities: this.state.entities, system_tables: tableS,
             parent: navigation.getParam("parent")
         })
         //const v = navigation.getParam("system_tables")
@@ -313,16 +342,24 @@ class EntityList extends React.Component {
             { text: 'File' },
         ];
         const { entities, system_tables } = this.state
-        
+
         return (<Container>
 
             <Content>
 
                 {entities && <FlatList
                     data={entities}
-
+                    onRefresh={() => {
+                        this.refreshData(-1);
+                    }}
+                    onEndReached={(info) => {
+                        debugger
+                        this.refreshData(1);
+                    }}
+                    onEndReachedThreshold={0.5}
+                    refreshing={this.state.isLoading}
                     renderItem={data => {
-                        
+
                         const item = data.item
                         const v = item
                         var obj = { 'main': "", 'sec': undefined };
@@ -372,15 +409,15 @@ class EntityList extends React.Component {
                                     type="font-awesome"
                                     size={10}
                                 ></Icon>
-                                 {system_tables && system_tables.childTables && system_tables.childTables.map((k, i) =>
-                                 <Button onPress={(e) => this.openList(k, v)} title={k.name}>
+                                {system_tables && system_tables.childTables && system_tables.childTables.map((k, i) =>
+                                    <Button onPress={(e) => this.openList(k, v)} title={k.name}>
 
-                                 </Button>
+                                    </Button>
 
-                             )}
+                                )}
                             </Right>
 
-                           
+
                         </ListItem>
                     }
 

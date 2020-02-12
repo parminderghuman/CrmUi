@@ -37,7 +37,7 @@ class TableScreen extends React.Component {
     var user = await AsyncStorage.getItem("User");
     user = JSON.parse(user)
     
-    if(user.userType == "CompanyAdmin" ){
+    if((user.activeCompany && user.activeCompany.userType == "CompanyAdmin")){
       this.props.navigation.navigate('PermissionsScreen', {
         'id': v._id,
         "parent":this.props.navigation.getParam("parent")

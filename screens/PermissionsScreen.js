@@ -169,6 +169,7 @@ class PermissionsScreen extends React.Component {
 
     }
     async fetchEntity() {
+        debugger
         const { navigation } = this.props;
         var parent = navigation.getParam("parent");
 
@@ -190,11 +191,22 @@ class PermissionsScreen extends React.Component {
 
         //if (permission.status == 500) {
         // }
+     
         var query = {};
-        if (parent) {
-            query['parent_id'] = parent._id;
+        debugger
+        if (parent._id) {
+          query = { "parent_id": { "$oid":parent._id } };
         }
-        var role = await API.FetchEntities(token, 'Role', query)
+       
+       
+  
+    
+        var sort = { 'updateAt': 'desc' };
+        sort = encodeURI(JSON.stringify(sort));
+       
+         query = encodeURI(JSON.stringify(query))
+        var params = { "query": query,"sort":sort }
+        var role = await API.FetchEntities(token, 'Role', params)
         var role = await role.json();
         role.unshift({ _id: null, name: "ALL" })
 
