@@ -97,6 +97,7 @@ export const loginUser = (email, password) => {
 export async function loginUserMain(email, password) {
     try {
         var responseJson = await API.loginUser(email, password);
+        debugger
         if (responseJson.status == 200) {
             await AsyncStorage.setItem('userToken', responseJson.headers.map["authorization"])
             return fetchUserInformation();
