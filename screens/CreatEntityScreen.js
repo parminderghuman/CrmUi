@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Picker, View, TouchableOpacity, TouchableHighlight, Dimensions } from 'react-native';
+import { ScrollView, StyleSheet, Picker, View, TouchableOpacity, TouchableHighlight, Dimensions, Modal } from 'react-native';
 import { Tab, Tabs, TabHeading, Spinner, Container, Header, Content, Form, Item, Switch, Input, Label, Button, Text, ScrollableTab, Toast, ListItem, List, Left, Body, Right, Separator } from 'native-base';
 
 import { ExpoLinksView } from '@expo/samples';
@@ -20,6 +20,7 @@ import CustomPicker from "../components/CustomPicker";
 import CustomSwitchWithLabel from '../components/CustomSwitchWithLabel';
 import FloatingLabelInput from '../components/FloatingLabelInput';
 import DateTimePicker from '@react-native-community/datetimepicker';
+
 class CreatEntityScreen extends React.Component {
 
   constructor() {
@@ -61,15 +62,15 @@ class CreatEntityScreen extends React.Component {
 
   setDataValue(val, key, nestedMap) {
     var { data } = this.state;
-    
+
     if (nestedMap.length == 0) {
       data[key] = val
     } else {
       for (i in nestedMap) {
-        data[nestedMap[i]][key] = val 
+        data[nestedMap[i]][key] = val
       }
     }
-    this.setState({data:data})
+    this.setState({ data: data })
   }
   componentWillReceiveProps(nextProps) {
 
@@ -193,7 +194,8 @@ class CreatEntityScreen extends React.Component {
     ),
   });
   async saveEntity() {
-    var {data} = this.state
+    console.log("save entity")
+    var { data } = this.state
     await this.setState({ isLoading: true })
     if (this.state.parent) {
       this.state.data.parent_id = this.state.parent._id;
@@ -202,7 +204,7 @@ class CreatEntityScreen extends React.Component {
     var responseJson = await API.EntitySave(token, this.state.system_table.name, this.state.data)
     if (responseJson.status == 200) {
       var json = await responseJson.json();
-      
+
       this.setState({ data: json, loading: false })
 
 
@@ -336,20 +338,20 @@ class CreatEntityScreen extends React.Component {
       var a = await API.FetchEntity(token, "system_tables", col.targetClass);
       a = await a.json()
       var query = {};
-      debugger
-      if (this.state.parent._id) {
-        query = { "parent_id": { "$oid":this.state.parent._id } };
-      }
-     
-     
 
-  
+      if (this.state.parent._id) {
+        query = { "parent_id": { "$oid": this.state.parent._id } };
+      }
+
+
+
+
       var sort = { 'updateAt': 'desc' };
       sort = encodeURI(JSON.stringify(sort));
-     
-       query = encodeURI(JSON.stringify(query))
-      var params = { "query": query,"sort":sort }
-      b = await API.FetchEntities(token, a.name, params);
+
+      query = encodeURI(JSON.stringify(query))
+      var params = { "query": query, "sort": sort }
+      var b = await API.FetchEntities(token, a.name, params);
       b = await b.json()
       for (var i in a.columns) {
         if (a.columns[i].dropDownValue == true) {
@@ -455,7 +457,7 @@ class CreatEntityScreen extends React.Component {
     }
   }
   renderView(system_table, dataObject, nestedMap) {
-    
+
     const styles = this.styles;
     const columnPermissions = system_table.columnPermissions;
     var data = this.state.data;
@@ -476,7 +478,7 @@ class CreatEntityScreen extends React.Component {
               ></Icon></Header>
             {
               collape[system_table.name][tab] == true && tabs[tab].map((value, index) => {
-                
+
                 if (columnPermissions[value.name].read != true && columnPermissions[value.name].write != true) {
                   return <View></View>
                 }
@@ -488,7 +490,7 @@ class CreatEntityScreen extends React.Component {
                   dataObject[value.name] = {};
                 }
                 if (value.type == "Boolean") {
-                  return <Item >
+                  return <Item style={{padding:10}} >
                     <Body style={{ flexDirection: "row", paddingTop: 10, paddingBottom: 10 }}><Text>{value.displayName}</Text>
 
                       <Switch style={{ position: "absolute", right: 0 }}
@@ -611,7 +613,7 @@ class CreatEntityScreen extends React.Component {
                       label={value.displayName}
                       value={dataObject[value.name]}
                       onChangeText={(e) => {
-                      dataObject[value.name] = e;
+                        dataObject[value.name] = e;
                         this.setDataValue(dataObject[value.name], value.name, nestedMap);
                       }}
                     />
@@ -619,7 +621,7 @@ class CreatEntityScreen extends React.Component {
 
                 }
                 else if (value.type == "Select") {
-                  return <Item><View style={styles.border}  >
+                  return <Item style={{ }}><View style={styles.border,{flex:1}}  >
                     <TouchableHighlight style={{ flex: 1 }} onPress={() => {
                       if (columnPermissions[value.name].write != true) {
                         return;
@@ -628,7 +630,7 @@ class CreatEntityScreen extends React.Component {
                         customPicker: (ti * 10 + index)
                       })
                     }}>
-                      <View style={{ flexDirection: 'row' }}>
+                      <View style={{ flexDirection: 'row',padding:20 }}>
                         <Text>{value.displayName} : </Text>
                         <Text >{dataObject[value.name]}</Text>
                       </View>
@@ -773,7 +775,8 @@ class CreatEntityScreen extends React.Component {
                   </View></Item>
                 }
                 else if (value.type == "ObjectId") {
-                  return <Item style={{ padding: 15 }} >
+                  return <Item  >
+                    <View style={{flex:1}}>
                     <TouchableHighlight onPress={() => {
                       if (columnPermissions[value.name].write != true) {
                         return;
@@ -783,11 +786,12 @@ class CreatEntityScreen extends React.Component {
                         customPicker: (ti * 10 + index)
                       })
                     }} >
-                      <View style={{ flexDirection: 'row' }}>
+                      <View style={{ flexDirection: 'row',flex:1,padding:20 }}>
                         <Text>{value.displayName} : </Text>
                         <Text >{this.GetDisplayValue(dataObject, value)}</Text>
                       </View>
                     </TouchableHighlight>
+                    </View>
                     {this.state.customPicker == (ti * 10 + index) && this.state.dependencyData[value.targetClass] && <CustomPicker
                       options={this.state.dependencyData[value.targetClass]}
 
@@ -825,16 +829,16 @@ class CreatEntityScreen extends React.Component {
 
                   </Item>
                 } else if (value.type == "Date") {
-                  return <Item style={{ flexDirection: "row" }}>
+                  return <Item style={{ flexDirection: "row",padding:10 }}>
                     <View style={{ flexDirection: "column" }}>
                       <Label >{value.displayName}</Label>
-
-                      <Text>{dataObject[value.name] ? new Date(dataObject[value.name]).toLocaleString() : ""}</Text>
+                      <Text style={{padding:15}}>{dataObject[value.name] ? new Date(dataObject[value.name]).toLocaleString() : ""}</Text>
                     </View>
-                    {columnPermissions[value.name].write != true && <View style={{ position: "absolute", right: 0, flexDirection: "row" }}>
+                    {columnPermissions[value.name].write == true && <View style={{ position: "absolute", right: 0, flexDirection: "row" , padding:5}}>
                       <Icon
                         type="font-awesome"
                         name="calendar"
+                       
                         onPress={(e) => {
 
                           this.setState({
@@ -860,16 +864,29 @@ class CreatEntityScreen extends React.Component {
 
 
                     {this.state.showDateTimePicker && this.state.showDateTimePicker == (ti * 10 + index) &&
-                      <DateTimePicker value={dataObject[value.name] ? new Date(dataObject[value.name]) : new Date()}
-                        mode={this.state.mode}
-                        is24Hour={true}
-                        display="default"
-                        onChange={(e, date) => {
+                      <Modal
+                        transparent={true}
+                        visible={true}
+                        presentationStyle="overFullScreen"
+                        backgroundColor={"grey"}
+                      >
+                        <View style={{ backgroundColor: "rgba(12, 12, 12, .9)", justifyContent: "center", flex: 1, }}>
+                          <View style={{ backgroundColor: "white",paddingTop:15,borderRadius:5,margin:10}}>
+                          <DateTimePicker  value={dataObject[value.name] ? new Date(dataObject[value.name]) : new Date()}
+                            mode={this.state.mode}
+                            is24Hour={true}
+                            display="default"
+                            onChange={(e, date) => {
 
-                          dataObject[value.name] = date;
-                          this.setState({ data: data, showDateTimePicker: -1 })
-                          this.setDataValue(dataObject[value.name], value.name, nestedMap);
-                        }} />
+                              dataObject[value.name] = date;
+                              this.setState({ data: data })
+                              this.setDataValue(dataObject[value.name], value.name, nestedMap);
+                            }} />
+                            
+                          <Button style={{justifyContent: "center" }} onPress={()=>this.setState({showDateTimePicker: -1})} ><Text >Ok</Text></Button>
+                          </View>
+                        </View>
+                      </Modal>
                     }
                   </Item>
                 } else if (value.type == "Address") {
@@ -890,7 +907,7 @@ class CreatEntityScreen extends React.Component {
                         label={'Line 1'}
                         value={dataObject[value.name]['Line1']}
                         onChangeText={(e) => {
-                        dataObject[value.name]['Line1'] = e; this.setDataValue(dataObject[value.name], value.name, nestedMap);
+                          dataObject[value.name]['Line1'] = e; this.setDataValue(dataObject[value.name], value.name, nestedMap);
                         }}
                       />
                     </Item>
@@ -905,7 +922,7 @@ class CreatEntityScreen extends React.Component {
                         label={'Line 2'}
                         value={dataObject[value.name]['Line2']}
                         onChangeText={(e) => {
-                        dataObject[value.name]['Line2'] = e; this.setDataValue(dataObject[value.name], value.name, nestedMap);
+                          dataObject[value.name]['Line2'] = e; this.setDataValue(dataObject[value.name], value.name, nestedMap);
                         }}
                       />
                     </Item>
@@ -921,7 +938,7 @@ class CreatEntityScreen extends React.Component {
                         label={'City'}
                         value={dataObject[value.name]['City']}
                         onChangeText={(e) => {
-                        dataObject[value.name]['City'] = e; this.setDataValue(dataObject[value.name], value.name, nestedMap);
+                          dataObject[value.name]['City'] = e; this.setDataValue(dataObject[value.name], value.name, nestedMap);
                         }}
                       />
                     </Item>
@@ -937,7 +954,7 @@ class CreatEntityScreen extends React.Component {
                         label={'State'}
                         value={dataObject[value.name]['State']}
                         onChangeText={(e) => {
-                        dataObject[value.name]['State'] = e; this.setDataValue(dataObject[value.name], value.name, nestedMap);
+                          dataObject[value.name]['State'] = e; this.setDataValue(dataObject[value.name], value.name, nestedMap);
                         }}
                       />
                     </Item>
@@ -978,7 +995,7 @@ class CreatEntityScreen extends React.Component {
                         label={'Zip Code'}
                         value={dataObject[value.name]['ZipCode']}
                         onChangeText={(e) => {
-                        dataObject[value.name]['ZipCode'] = e;
+                          dataObject[value.name]['ZipCode'] = e;
                           this.setState({ data: data })
                         }}
 
@@ -997,8 +1014,8 @@ class CreatEntityScreen extends React.Component {
                   if (typeof (dataObject[value.name]) == "undefined") {
                     dataObject[value.name] = {}
                   }
-                  
-                  var m  =JSON.parse(JSON.stringify(nestedMap))
+
+                  var m = JSON.parse(JSON.stringify(nestedMap))
 
                   m.push(value.name)
                   return this.renderView(value.table, dataObject[value.name], m)

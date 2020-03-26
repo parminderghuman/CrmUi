@@ -52,9 +52,9 @@ export const FetchUserEntity = (token) => {
   });
 }
 
-export const FetchSystemEntity = (token,id) => {
+export const FetchSystemEntity = (token, id) => {
   return fetch(AppUrl.AppUrl
-    + "system_tables/"+id, {
+    + "system_tables/" + id, {
     method: "get", headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -63,9 +63,9 @@ export const FetchSystemEntity = (token,id) => {
   });
 }
 
-export const FetchSystemPermission = (token,id) => {
+export const FetchSystemPermission = (token, id) => {
   return fetch(AppUrl.AppUrl
-    + "System_Table_Permissions/"+id, {
+    + "System_Table_Permissions/" + id, {
     method: "get", headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -73,9 +73,9 @@ export const FetchSystemPermission = (token,id) => {
     }
   });
 }
-export const SaveFetchSystemPermission = (token,id,data) => {
+export const SaveFetchSystemPermission = (token, id, data) => {
   return fetch(AppUrl.AppUrl
-    + "System_Table_Permissions/"+id, {
+    + "System_Table_Permissions/" + id, {
     method: "post", headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -106,15 +106,56 @@ export const startNewChat = (token, data) => {
   });
 }
 
+export const addLocation = (token, data) => {
+  return fetch(AppUrl.AppUrl
+    + "/users/addLocation", {
+    method: "post", headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'authorization': token
+    }, body: JSON.stringify(data)
 
+
+  });
+}
+
+export const FetchLocation = (token) => {
+  return fetch(AppUrl.AppUrl
+    + "/users/fetchLocation", {
+    method: "get", headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'authorization': token
+    }
+  });
+}
+
+
+export const addToken = (token,deviceToken, deviceType) => {
+  let formData = new FormData();
+  formData.append('deviceToken', deviceToken);
+  formData.append('deviceType', deviceType);
+  
+  return fetch(AppUrl.AppUrl
+    + "/users/addToken", {
+    method: "post", headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'authorization': token
+    }, body: formData
+  });
+}
 export default {
+  addToken,
   EntitySave,
   FetchEntities,
   FetchEntity,
   FetchUserEntity,
   updatePassword,
-   startNewChat,
-   FetchSystemEntity,
-   SaveFetchSystemPermission,
-   FetchSystemPermission
+  startNewChat,
+  FetchSystemEntity,
+  SaveFetchSystemPermission,
+  FetchSystemPermission,
+  addLocation,
+  FetchLocation
 };

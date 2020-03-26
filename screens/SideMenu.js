@@ -1,13 +1,21 @@
 import PropTypes from 'prop-types';
 import React, { Component, TouchableHighlight } from 'react';
 import { NavigationActions } from 'react-navigation';
-import { ScrollView, Text, View, AsyncStorage, Modal, TouchableHighlightBase, Alert, Dimensions } from 'react-native';
+import { ScrollView, Text, View, AsyncStorage, Modal, TouchableHighlightBase, Alert, Dimensions, Platform } from 'react-native';
 import { StackNavigator } from 'react-navigation';
 import * as Api from '../api/entity-save';
 import { Container, Header, Content, Form, Item, Input, Label, Button, Toast, ListItem, List, Left, Body, Right, Spinner } from 'native-base';
 import { Icon } from 'react-native-elements'
 import { isLoading } from 'expo-font';
 import MapView from 'react-native-maps';
+import * as Location from 'expo-location';
+import * as Permissions from 'expo-permissions';
+import * as TaskManager from 'expo-task-manager';
+import * as BackgroundFetch from 'expo-background-fetch';
+
+import { Notifications } from 'expo';
+import { Marker } from 'react-native-maps';
+
 
 class SideMenu extends Component {
 
@@ -22,10 +30,13 @@ class SideMenu extends Component {
       password: "",
       oldPassword: "",
       rePassword: "",
-      error: false, isLoading: false, showMap: false
+      error: false, isLoading: false, showMap: false,
+      location: []
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.fecthLocation = this.fecthLocation.bind(this);
+
   }
 
   navigateToScreen = (route) => () => {
@@ -34,24 +45,48 @@ class SideMenu extends Component {
     });
     this.props.navigation.dispatch(navigateAction);
   }
-  componentDidMount() {
+  async componentDidMount() {
     this._bootstrapAsync();
+
+
 
   }
   _bootstrapAsync = async () => {
-    var list = await AsyncStorage.getItem("UserEntities");
+    const userToken = await AsyncStorage.getItem('userToken');
     var user = await AsyncStorage.getItem("User");
+    user = JSON.parse(user)
+
+    try {
+      var deviceToken = "";
+      const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
+      if (status != "granted") {
+      } else {
+        try {
+          let token = await Notifications.getDevicePushTokenAsync({ "gcmSenderId": "592786157647" });
+          deviceToken = token.data;
+        } catch (devErrro) {
+          let token = await Notifications.getExpoPushTokenAsync();
+          deviceToken = token;
+        }
+
+
+       var resp = await  Api.addToken(userToken,deviceToken, Platform.OS)
+      }
+    } catch (noError) {
+      console.log("noError : " + noError.message)
+    }
+
+    console.log("deviceToken :  " + deviceToken)
+    var list = await AsyncStorage.getItem("UserEntities");
+
 
     var parent = undefined;
     var parentClass = undefined
-    user = JSON.parse(user)
-    debugger
+
     if (user.userType != "SuperAdmin") {
       parentClass = JSON.parse(list)[0];
-
       list = parentClass.childTables;
 
-      const userToken = await AsyncStorage.getItem('userToken');
 
 
       var query = { "_id": { "$oid": user.activeCompany.parent_id } };
@@ -79,6 +114,43 @@ class SideMenu extends Component {
         "Title": list[0].displayName ? list[0].displayName : list[0].name,
         "TitleIcon": list[0].icon
       });
+
+    }
+
+    let { status } = await Permissions.askAsync(Permissions.LOCATION);
+    if (status !== 'granted') {
+      this.setState({
+        errorMessage: 'Permission to access location was denied',
+      });
+    }
+
+
+    //var t = await Location.stopLocationUpdatesAsync("background-location-task")
+    //return
+    if (Platform.OS != "web") {
+      var l = await Location.hasStartedLocationUpdatesAsync("background-location-task")
+      if (!l) {
+
+        var options = {
+          accuracy: Location.Accuracy.High,
+          //timeInterval:1,
+          distanceInterval: 1,
+          showsBackgroundLocationIndicator: true,
+          foregroundService: {
+            notificationTitle: "Test",
+            notificationBody: "test",
+            notificationColor: "#RRGGBB"
+          }
+        }
+        var m = await Location.startLocationUpdatesAsync("background-location-task", options)
+
+
+      }
+      var ma = await BackgroundFetch.registerTaskAsync("background-location-task1", { minimumInterval: 1, stopOnTerminate: false, startOnBoot: true })
+      var me = await BackgroundFetch.setMinimumIntervalAsync(10);
+      var is = await TaskManager.isTaskRegisteredAsync("background-location-task")
+      //var is1  = await  TaskManager.isTaskRegisteredAsync("background-location-task1")
+
 
     }
   }
@@ -125,6 +197,17 @@ class SideMenu extends Component {
     this.setState({
       isLoading: false,
     });
+
+
+  }
+
+  async fecthLocation() {
+    const userToken = await AsyncStorage.getItem('userToken');
+
+    var l = await Api.FetchLocation(userToken);
+    var a = await l.json();
+
+    this.setState({ locations: a.results })
   }
   render() {
     const { list, user, parent } = this.state;
@@ -150,7 +233,7 @@ class SideMenu extends Component {
           <List>
             {list && list.map((l, i) =>
               <ListItem avatar>
-                <Left>
+                <Left style={{ marginRight: 20 }}>
                   <Icon name={l.icon ? l.icon : 'cog'}
                     type="font-awesome"
                   ></Icon>
@@ -184,7 +267,7 @@ class SideMenu extends Component {
               </ListItem>
             )}
             <ListItem avatar>
-              <Left>
+              <Left style={{ marginRight: 20 }}>
                 <Icon name={'comments'}
                   type="font-awesome"
                 ></Icon>
@@ -213,7 +296,7 @@ class SideMenu extends Component {
 
 
             {((this.state.user.activeCompany && this.state.user.activeCompany.userType == "CompanyAdmin") || this.state.user.userType == "SuperAdmin") && <ListItem avatar>
-              <Left>
+              <Left style={{ marginRight: 20 }}>
                 <Icon name={'cog'}
                   type="font-awesome"
                 ></Icon>
@@ -242,7 +325,7 @@ class SideMenu extends Component {
             </ListItem>
             }
             <ListItem avatar>
-              <Left>
+              <Left style={{ marginRight: 20 }}>
                 <Icon name={'key'}
                   type="font-awesome"
                 ></Icon>
@@ -264,15 +347,16 @@ class SideMenu extends Component {
               </Right>
             </ListItem>
             <ListItem avatar>
-              <Left>
+              <Left style={{ marginRight: 20 }}>
                 <Icon name={'map-marker'}
                   type="font-awesome"
                 ></Icon>
               </Left>
               <Body>
                 <Text onPress={(e) => {
-                  // this.props.navigation.pop(1);
+
                   this.setState({ showMap: true })
+                  this.fecthLocation();
 
                 }} >
                   Location
@@ -295,7 +379,7 @@ class SideMenu extends Component {
             }
             }
             >
-              <Left>
+              <Left style={{ marginRight: 20 }}>
                 <Icon name="power-off"
                   type="font-awesome"
                   size={20}
@@ -316,7 +400,7 @@ class SideMenu extends Component {
           </List>
         </View>
 
-        <Modal
+        {this.state.modalVisible && <Modal
           animationType="slide"
           transparent={true}
           style={{ backgroundColor: "red" }}
@@ -401,8 +485,8 @@ class SideMenu extends Component {
           }}><Spinner color='blue' /></View>}
 
         </Modal>
-
-        <Modal
+        }
+        {this.state.showMap && <Modal
           animationType="slide"
           transparent={true}
           style={{ backgroundColor: "red" }}
@@ -414,14 +498,21 @@ class SideMenu extends Component {
 
           <View style={{ backgroundColor: "rgba(12, 12, 12, .5)", alignItems: "center", justifyContent: "center", flex: 1 }}>
 
-            <MapView style={{ backgroundColor:"red"}}
-              initialRegion={{
-                latitude: 37.78825,
-                longitude: -122.4324,
-                latitudeDelta: 0.0922,
-                longitudeDelta: 0.0421,
-              }}
-            />
+            <MapView style={{
+              backgroundColor: "red", width: Dimensions.get('window').width,
+              height: Dimensions.get('window').height - 45,
+            }}
+            >
+
+              {this.state.locations && this.state.locations.map(marker => (
+                <Marker
+                  coordinate={{ latitude: (marker.users[0].location ? marker.users[0].location.coordinates[0] : 0), longitude: (marker.users[0].location ? marker.users[0].location.coordinates[1] : 0) }}
+                  title={marker.Name}
+                  description={marker.Name}
+                />
+              ))}
+            </MapView>
+
             <Button block style={{ padding: 10, color: "white" }} onPress={() => {
               this.setState({
                 showMap: false,
@@ -437,7 +528,7 @@ class SideMenu extends Component {
           }}><Spinner color='blue' /></View>}
 
         </Modal>
-
+        }
       </Container>
     );
   }
@@ -455,6 +546,7 @@ const styles = {
     backgroundColor: 'white',
     height: '100%',
     width: '100%',
+    minWidth: 50,
     flex: 1, padding: 10
   },
   container: {

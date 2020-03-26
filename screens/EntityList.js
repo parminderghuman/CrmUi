@@ -36,7 +36,8 @@ class EntityList extends React.Component {
                     margin: 8,
                 },
             }),
-            entities: []
+            entities: [],
+
         };
         this.handleAddE = this.handleAddE.bind(this);
         this.openTable = this.openTable.bind(this);
@@ -63,7 +64,7 @@ class EntityList extends React.Component {
             "system_tables": this.state.system_tables,
             "entity": undefined,
             "parent": this.state.parent,
-            Title: "Add "+this.props.navigation.getParam('Title'),
+            Title: "Add " + this.props.navigation.getParam('Title'),
             TitleIcon: this.props.navigation.getParam('TitleIcon')
         })
     }
@@ -228,11 +229,15 @@ class EntityList extends React.Component {
         //this.props.fetchEntities("system_tables");
     }
     async refreshData(i = 0) {
+        if(i ==1 && this.state.moreEndReach){
+            return
+        }
         await this.setState({ isLoading: true })
         const userToken = await AsyncStorage.getItem('userToken');
 
         const { navigation } = this.props
         const v = navigation.getParam("system_tables")
+
         const parent = navigation.getParam("parent");
         var tableS = await API.FetchEntity(userToken, "system_tables", v._id);
         tableS = await tableS.json();
@@ -241,7 +246,7 @@ class EntityList extends React.Component {
         if (parent) {
             query = { "parent_id": { "$oid": parent._id } };
         }
-        debugger
+
         try {
 
 
@@ -272,10 +277,17 @@ class EntityList extends React.Component {
         } else {
             this.state.entities = tableF
         }
-        this.setState({
-            entities: this.state.entities, system_tables: tableS,
-            parent: navigation.getParam("parent")
-        })
+        var moreEndReach = true;
+        if (i == 1 && tableF.length == 0) {
+            moreEndReach = false;
+        } 
+            this.setState({
+                entities: this.state.entities, system_tables: tableS,
+                parent: navigation.getParam("parent"),
+                moreEndReach:moreEndReach
+            })
+        
+
         //const v = navigation.getParam("system_tables")
         tableS.columns.map((col, ind) => {
             if (col.type == "ObjectId" || col.type == "MultiObject") {
@@ -291,7 +303,7 @@ class EntityList extends React.Component {
             const token = await AsyncStorage.getItem('userToken')
             var a = await API.FetchEntity(token, "system_tables", col.targetClass);
             a = await a.json()
-            b = await API.FetchEntities(token, a.name);
+            var b = await API.FetchEntities(token, a.name);
             b = await b.json()
             for (var i in a.columns) {
                 if (a.columns[i].dropDownValue == true) {
@@ -353,7 +365,7 @@ class EntityList extends React.Component {
                         this.refreshData(-1);
                     }}
                     onEndReached={(info) => {
-                        debugger
+
                         this.refreshData(1);
                     }}
                     onEndReachedThreshold={0.5}

@@ -109,22 +109,22 @@ ChatListStack.navigationOptions = {
 };
 
 ChatListStack.path = 'ChatListScreen';
-const sn =  createSwitchNavigator({
+const tabNavigator = createDrawerNavigator({
   HomeStack:{screen:HomeStack,navigationOptions:{header:null}},
   LinksStack:{screen:LinksStack,navigationOptions:{header:null}},
   SettingsStack:{screen:SettingsStack,navigationOptions:{header:null}},
   TableScreenStack:{screen:TableScreenStack,navigationOptions:{header:null}},
   ChatListStack:{screen:ChatListStack,navigationOptions:{header:null}},
 },{
-},{
- 
-});
-const tabNavigator = createDrawerNavigator({sn: {screen:sn ,navigationOptions:{header:null}}
-},{
   contentComponent: SideMenu,
-  drawerWidth: Dimensions.get('window').width - 120,  
- 
+  drawerWidth: 250,  
 });
+// const tabNavigator = createDrawerNavigator({sn: {screen:sn ,navigationOptions:{header:null}}
+// },{
+//   contentComponent: SideMenu,
+//   drawerWidth: Dimensions.get('window').width - 120,  
+ 
+// });
 
 // const tabNavigator = createDrawerNavigator({
 //   HomeStack: { screen: HomeStack, navigationOptions: { header: null } },

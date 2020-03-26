@@ -169,7 +169,7 @@ class PermissionsScreen extends React.Component {
 
     }
     async fetchEntity() {
-        debugger
+        
         const { navigation } = this.props;
         var parent = navigation.getParam("parent");
 
@@ -193,7 +193,7 @@ class PermissionsScreen extends React.Component {
         // }
      
         var query = {};
-        debugger
+        
         if (parent._id) {
           query = { "parent_id": { "$oid":parent._id } };
         }

@@ -7,8 +7,10 @@ import axios from 'axios';
 import { Provider } from "react-redux";
 import AppNavigator from './navigation/AppNavigator';
 import store from './store';
+import * as TaskManager from 'expo-task-manager';
+import * as BackgroundFetch from 'expo-background-fetch';
 
-import { Root,Container, Text,StyleProvider } from 'native-base';
+import { Root, Container, Text, StyleProvider } from 'native-base';
 import * as Font from 'expo-font';
 const client = axios.create({
   baseURL: 'http://localhost:8080/',
@@ -35,13 +37,12 @@ export default function App(props) {
     return (
 
       <Provider store={store}>
-
-
         <Root >
           {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-         <StyleProvider style={getTheme(material)}>
-          <AppNavigator  /></StyleProvider>
-        </Root></Provider>
+          <StyleProvider style={getTheme(material)}>
+            <AppNavigator /></StyleProvider>
+        </Root>
+      </Provider>
 
     )
   }
@@ -83,3 +84,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
 });
+

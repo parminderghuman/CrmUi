@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Platform,
   ActivityIndicator,
   AsyncStorage,
   StatusBar,
@@ -10,16 +11,20 @@ import {
 } from 'react-native';
 import { Container, Header, Content, Form, Item, Input, Label, Button, Toast, ListItem, List, Left, Body, Right, Spinner } from 'native-base';
 
+import * as Location from 'expo-location';
+import * as Permissions from 'expo-permissions';
+import * as BackgroundFetch from 'expo-background-fetch';
+import * as TaskManager from 'expo-task-manager';
+
 
 import API from "../api/entity-save";
 import APILogin from "../api/login";
 import * as LoginService from "../actions/login-actions";
-import * as TaskManager from 'expo-task-manager';
-import * as Location from 'expo-location';
-import * as Permissions from 'expo-permissions';
 import * as LocationTracking from '../api/location-trackin'
+
 export default class AuthLoadingScreen extends React.Component {
   componentDidMount() {
+    
     this._bootstrapAsync();
 
    
@@ -29,7 +34,8 @@ export default class AuthLoadingScreen extends React.Component {
   _bootstrapAsync = async () => {
     var that = this;
     //this._handleBackGroundLocation();
-    //await AsyncStorage.clear();
+  //  await AsyncStorage.clear();
+    
     var result = await LoginService.fetchUserInformation()
   
     if (result === true) {
@@ -39,18 +45,24 @@ export default class AuthLoadingScreen extends React.Component {
     } else if (result === false) {
       this.props.navigation.navigate('Auth')
     } else {
-      Alert.alert(
-        'Network Error',
-        result,
-        [
-          {
-            text: 'Retry', onPress: () => {
-              that._bootstrapAsync()
-            }
-          },
-        ],
-        { cancelable: false },
-      );
+      if(Platform.OS == "web"){
+        alert('Network Error : '+result);
+          that._bootstrapAsync()
+      }else{
+        Alert.alert(
+          'Network Error',
+          result,
+          [
+            {
+              text: 'Retry', onPress: () => {
+                that._bootstrapAsync()
+              }
+            },
+          ],
+          { cancelable: false },
+        );
+      }
+      
     }
 
   };
@@ -81,3 +93,32 @@ export default class AuthLoadingScreen extends React.Component {
     );
   }
 }
+
+TaskManager.defineTask("background-location-task", ({ data: { locations }, error }) => {
+  
+  console.log("Fetchig ",error)
+  if (error) {
+    // check `error.message` for more details.
+    return;
+  }
+
+  console.log('Received new locations', locations);
+  //var loc[0]
+  var data = {lat : locations[0].coords.latitude, lng: locations[0].coords.longitude};
+  postData(data);
+});
+
+async function  postData(data){
+  const token = await AsyncStorage.getItem('userToken');
+
+var a = await API.addLocation(token,data)
+
+};
+
+TaskManager.defineTask("background-location-task1", () => {
+  
+  console.log("Fetchig 1")
+
+ 
+  console.log('Received new location1s');
+});

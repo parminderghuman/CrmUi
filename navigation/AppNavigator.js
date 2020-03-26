@@ -18,6 +18,7 @@ const AuthStack = createStackNavigator({ SignIn:{screen:  LoginScreen , navigati
 //const CreateTable = createStackNavigator({ CreateTable: CreateTableScreen });
 export default createAppContainer(
   createSwitchNavigator({
+    AuthLoading: AuthLoadingScreen,
     Auth: AuthStack,
     // You could add another route here for authentication.
     // Read more at https://reactnavigation.org/docs/en/auth-flow.html
@@ -29,7 +30,7 @@ export default createAppContainer(
       
      // EntityList:{screen:EntityList}
     } ),
-    AuthLoading: AuthLoadingScreen,
+   
     //CreateTable:CreateTableScreen,
 
   },

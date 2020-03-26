@@ -22,7 +22,6 @@ import MultiSelect from 'react-native-multiple-select';
 import CustomPicker from "../components/CustomPicker";
 import CustomSwitchWithLabel from '../components/CustomSwitchWithLabel';
 import FloatingLabelInput from '../components/FloatingLabelInput';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default class ChatListScreen extends React.Component {
 
@@ -180,7 +179,7 @@ export default class ChatListScreen extends React.Component {
         ),
     });
     async fetchData(i = 0) {
-        debugger
+        
         const { navigation } = this.props
         var system_table = navigation.getParam("system_tables");
         var user = await AsyncStorage.getItem("User");
@@ -277,7 +276,7 @@ export default class ChatListScreen extends React.Component {
                                 this.fetchData(-1);
                             }}
                             onEndReached={(info) => {
-                                debugger
+                                
                                 this.fetchData(1);
                             }}
                             onEndReachedThreshold={0.5}

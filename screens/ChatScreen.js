@@ -19,7 +19,6 @@ import MultiSelect from 'react-native-multiple-select';
 import CustomPicker from "../components/CustomPicker";
 import CustomSwitchWithLabel from '../components/CustomSwitchWithLabel';
 import FloatingLabelInput from '../components/FloatingLabelInput';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default class ChatScreen extends React.Component {
     state = {
@@ -169,7 +168,7 @@ export default class ChatScreen extends React.Component {
             var resp = await resp.json();
         }
         var messages = [];
-        debugger
+        
         for (var i in resp) {
             if (resp[i].message) {
 
@@ -198,7 +197,7 @@ export default class ChatScreen extends React.Component {
         var chat = navigation.getParam("chat");
         var entity = navigation.getParam("entity");
         const token = await AsyncStorage.getItem('userToken')
-        debugger
+        
         var resp = await ChatApi.ChatSave(token, this.state.chat.id, { text: messages[0].text });
         var resp = await resp.json();
 
